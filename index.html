@@ -1,593 +1,362 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI / Energy / Situational Awareness Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; background: #080A0F; color: #E5E7EB; font-family: 'Inter', system-ui, sans-serif; }
-    button, input { font-family: inherit; }
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-    @keyframes gradShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+import { useState, useMemo } from "react";
 
-    .app { min-height: 100vh; background: #080A0F; }
-    .header { padding: 28px 24px 18px; border-bottom: 1px solid rgba(255,255,255,0.04); background: linear-gradient(180deg, rgba(255,255,255,0.015) 0%, transparent 100%); }
-    .header-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-    .pulse-dot { width: 7px; height: 7px; border-radius: 50%; animation: pulse 2s infinite; }
-    .eyebrow { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
-    .title { font-size: 24px; font-weight: 800; margin: 4px 0; background-size: 200% 200%; animation: gradShift 5s ease infinite; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .subtitle { font-size: 12px; color: #555; margin: 0; }
+// ── All stocks with sector, matrix quality/valuation, and detail data ──
+const ALL_STOCKS = [
+  // Nuclear & Uranium
+  { ticker: "CEG", name: "Constellation Energy", sector: "nuclear", sub: "Nuclear Power", price: 299.13, change: 1.49, rating: "Buy", analysts: 72, targetUpside: 12, revGrowth: 8, epsGrowth: 13, mcap: "101.9B", catalyst: "TMI 원전 재가동(MS Azure), Meta 20년 계약", quality: 3, valuation: 1, desc: "미국 최대 원자력 발전 운영사. 빅테크 장기 전력 공급 계약 체결.", hi: 432.78, lo: 138, avg: 264.95, factors: { volatility: 6, value: 5, size: 9, momentum: 7, beta: 6, outlook: 8 }, isNew: false },
+  { ticker: "CCJ", name: "Cameco Corp", sector: "nuclear", sub: "Uranium Mining", price: 120.25, change: 0.96, rating: "Buy", analysts: 74, targetUpside: 25, revGrowth: 30, epsGrowth: 55, mcap: "52.8B", catalyst: "Westinghouse 49% 지분, 원자로 10기 계약", quality: 3, valuation: 2, desc: "세계 2위 우라늄 생산. Westinghouse 지분으로 수직 통합.", hi: 180, lo: 75, avg: 150, factors: { volatility: 7, value: 6, size: 8, momentum: 7, beta: 7, outlook: 8 }, isNew: false },
+  { ticker: "OKLO", name: "Oklo Inc", sector: "nuclear", sub: "Advanced Nuclear", price: 64.20, change: 1.34, rating: "Buy", analysts: 70, targetUpside: 80, revGrowth: 0, epsGrowth: 0, mcap: "16.2B", catalyst: "고속 핵분열 원자로, $2.6B 유동성", quality: 2, valuation: 2, desc: "차세대 고속 핵분열 원자로 개발. Sam Altman 투자.", hi: 120, lo: 30, avg: 90, factors: { volatility: 9, value: 3, size: 4, momentum: 6, beta: 9, outlook: 7 }, isNew: false },
+  { ticker: "LEU", name: "Centrus Energy", sector: "nuclear", sub: "Uranium Enrichment", price: 202.16, change: 2.21, rating: "Buy", analysts: 65, targetUpside: 30, revGrowth: 15, epsGrowth: 25, mcap: "3.2B", catalyst: "미국 유일 우라늄 농축, HALEU 독점", quality: 3, valuation: 2, desc: "미국 유일 상업 우라늄 농축. SMR 핵심 공급자.", hi: 350, lo: 100, avg: 265, factors: { volatility: 9, value: 4, size: 3, momentum: 5, beta: 8, outlook: 7 }, isNew: true },
+  { ticker: "UEC", name: "Uranium Energy", sector: "nuclear", sub: "Uranium Mining", price: 15.13, change: 2.09, rating: "Buy", analysts: 68, targetUpside: 35, revGrowth: 120, epsGrowth: 0, mcap: "6.1B", catalyst: "미국 최대 우라늄 광산, ISR 채굴", quality: 2, valuation: 3, desc: "미국 최대 우라늄 채굴. ISR 저비용 생산.", hi: 22, lo: 8, avg: 17, factors: { volatility: 8, value: 5, size: 4, momentum: 6, beta: 8, outlook: 7 }, isNew: true },
+  { ticker: "SMR", name: "NuScale Power", sector: "nuclear", sub: "SMR", price: 11.41, change: -2.56, rating: "Hold", analysts: 50, targetUpside: 80, revGrowth: 325, epsGrowth: 0, mcap: "3.7B", catalyst: "NRC 승인 유일 SMR, TVA 6GW", quality: 2, valuation: 3, desc: "NRC 승인 유일 SMR. 현금 $841M, 무부채.", hi: 41, lo: 8, avg: 20.5, factors: { volatility: 10, value: 2, size: 3, momentum: 4, beta: 9, outlook: 6 }, isNew: true },
+  { ticker: "NNE", name: "Nano Nuclear", sector: "nuclear", sub: "Micro Nuclear", price: 24.58, change: 1.19, rating: "Buy", analysts: 60, targetUpside: 45, revGrowth: 0, epsGrowth: 0, mcap: "1.8B", catalyst: "ZEUS/ODIN 초소형 원자로", quality: 1, valuation: 2, desc: "이동식 초소형 원자로 개발. 극한환경 전력.", hi: 55, lo: 12, avg: 35, factors: { volatility: 10, value: 2, size: 2, momentum: 5, beta: 9, outlook: 6 }, isNew: true },
+  { ticker: "DNN", name: "Denison Mines", sector: "nuclear", sub: "Uranium Mining", price: 3.93, change: 1.29, rating: "Buy", analysts: 62, targetUpside: 40, revGrowth: 0, epsGrowth: 0, mcap: "3.5B", catalyst: "Athabasca 고품위 광산", quality: 2, valuation: 3, desc: "캐나다 고품위 우라늄. Phoenix 프로젝트.", hi: 5.5, lo: 1.5, avg: 4.2, factors: { volatility: 8, value: 5, size: 3, momentum: 6, beta: 8, outlook: 7 }, isNew: true },
+  { ticker: "UUUU", name: "Energy Fuels", sector: "nuclear", sub: "Uranium+Rare Earth", price: 20.91, change: -0.43, rating: "Buy", analysts: 64, targetUpside: 35, revGrowth: 45, epsGrowth: 80, mcap: "3.4B", catalyst: "우라늄+희토류 통합 생산", quality: 2, valuation: 3, desc: "미국 유일 우라늄+희토류 통합.", hi: 30, lo: 8, avg: 22, factors: { volatility: 8, value: 5, size: 3, momentum: 6, beta: 8, outlook: 7 }, isNew: true },
+  { ticker: "URA", name: "Global X Uranium", sector: "nuclear", sub: "ETF", price: 55.27, change: 0.78, rating: "ETF", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, mcap: "4.2B", catalyst: "우라늄 섹터 대표 ETF", quality: 0, valuation: 0, desc: "우라늄 섹터 분산 투자 ETF.", hi: 0, lo: 0, avg: 0, factors: { volatility: 6, value: 5, size: 5, momentum: 6, beta: 6, outlook: 7 }, isNew: true },
+  { ticker: "URNM", name: "Sprott Uranium", sector: "nuclear", sub: "ETF", price: 69.42, change: 0.76, rating: "ETF", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, mcap: "2.1B", catalyst: "순수 우라늄 채굴 ETF", quality: 0, valuation: 0, desc: "순수 우라늄 채굴+실물 ETF.", hi: 0, lo: 0, avg: 0, factors: { volatility: 7, value: 5, size: 4, momentum: 6, beta: 7, outlook: 7 }, isNew: true },
+  // AI Power
+  { ticker: "GEV", name: "GE Vernova", sector: "power", sub: "Gas Turbines", price: 978.15, change: -0.79, rating: "Buy", analysts: 78, targetUpside: 18, revGrowth: 14, epsGrowth: 82, mcap: "268B", catalyst: "배당 2배, $10B 바이백, 전력장비 1위", quality: 3, valuation: 1, desc: "전력장비 글로벌 1위. 백로그 $200B 목표.", hi: 1200, lo: 600, avg: 950, factors: { volatility: 6, value: 6, size: 9, momentum: 8, beta: 5, outlook: 9 }, isNew: false },
+  { ticker: "BE", name: "Bloom Energy", sector: "power", sub: "Fuel Cells", price: 209.97, change: -1.81, rating: "Buy", analysts: 65, targetUpside: 22, revGrowth: 58, epsGrowth: 140, mcap: "47.5B", catalyst: "매출 +58%, $20B 백로그", quality: 3, valuation: 1, desc: "SOFC 기반 온사이트 발전. DC 직접 전력 공급.", hi: 300, lo: 100, avg: 265, factors: { volatility: 8, value: 4, size: 6, momentum: 9, beta: 8, outlook: 8 }, isNew: false },
+  { ticker: "WULF", name: "TeraWulf", sector: "power", sub: "AI Data Center", price: 19.31, change: -1.86, rating: "Buy", analysts: 65, targetUpside: 45, revGrowth: 200, epsGrowth: 0, mcap: "6.8B", catalyst: "$1B 유증→켄터키 DC, HPC 50%+", quality: 2, valuation: 2, desc: "BTC→AI DC 전환. HPC 매출 50% 돌파.", hi: 28, lo: 8, avg: 22, factors: { volatility: 9, value: 3, size: 3, momentum: 8, beta: 9, outlook: 7 }, isNew: true },
+  { ticker: "NBIS", name: "Nebius Group", sector: "power", sub: "GPU Cloud", price: 165.26, change: -0.91, rating: "Buy", analysts: 70, targetUpside: 45, revGrowth: 830, epsGrowth: 0, mcap: "37.5B", catalyst: "AI 클라우드 +830%, EBITDA→$10B", quality: 3, valuation: 2, desc: "AI GPU 클라우드. 매출 830% 폭증.", hi: 250, lo: 50, avg: 200, factors: { volatility: 9, value: 3, size: 5, momentum: 9, beta: 9, outlook: 8 }, isNew: false },
+  { ticker: "APD", name: "Air Products", sector: "power", sub: "Industrial Gas", price: 297.26, change: 0.69, rating: "Hold", analysts: 58, targetUpside: 8, revGrowth: 5, epsGrowth: 8, mcap: "66B", catalyst: "수소경제 핵심, DC 냉각 가스", quality: 2, valuation: 2, desc: "산업가스 3위. 수소·냉각가스 공급.", hi: 340, lo: 250, avg: 310, factors: { volatility: 3, value: 7, size: 8, momentum: 4, beta: 3, outlook: 5 }, isNew: true },
+  { ticker: "LIN", name: "Linde PLC", sector: "power", sub: "Industrial Gas", price: 499.08, change: 0.23, rating: "Buy", analysts: 72, targetUpside: 10, revGrowth: 6, epsGrowth: 12, mcap: "238B", catalyst: "산업가스 1위, 반도체·DC 특수가스", quality: 3, valuation: 1, desc: "글로벌 산업가스 1위. 안정 성장.", hi: 560, lo: 420, avg: 530, factors: { volatility: 2, value: 7, size: 9, momentum: 5, beta: 2, outlook: 6 }, isNew: true },
+  // Photonics
+  { ticker: "LITE", name: "Lumentum", sector: "photonics", sub: "Lasers", price: 827, change: 0, rating: "Strong Buy", analysts: 85, targetUpside: 15, revGrowth: 77, epsGrowth: 6700, mcap: "54B", catalyst: "NVIDIA $2B 투자, S&P 500 편입", quality: 3, valuation: 1, desc: "NVIDIA $2B 전략 투자. 광학 핵심.", hi: 1000, lo: 400, avg: 750, factors: { volatility: 8, value: 4, size: 7, momentum: 9, beta: 8, outlook: 9 }, isNew: false },
+  { ticker: "COHR", name: "Coherent", sector: "photonics", sub: "Photonic Modules", price: 0, change: 0, rating: "Strong Buy", analysts: 82, targetUpside: 20, revGrowth: 15, epsGrowth: 45, mcap: "25B", catalyst: "NVIDIA $2B, AI 트랜시버 폭발", quality: 3, valuation: 2, desc: "NVIDIA $2B 투자. 차세대 실리콘 포토닉스.", hi: 0, lo: 0, avg: 0, factors: { volatility: 7, value: 5, size: 6, momentum: 8, beta: 7, outlook: 9 }, isNew: false },
+  { ticker: "MRVL", name: "Marvell", sector: "photonics", sub: "Custom Silicon", price: 0, change: 0, rating: "Buy", analysts: 78, targetUpside: 22, revGrowth: 25, epsGrowth: 40, mcap: "95B", catalyst: "Celestial AI $5.5B 인수", quality: 3, valuation: 2, desc: "맞춤 AI칩+광학 I/O 통합.", hi: 0, lo: 0, avg: 0, factors: { volatility: 7, value: 5, size: 8, momentum: 7, beta: 7, outlook: 8 }, isNew: false },
+  { ticker: "FN", name: "Fabrinet", sector: "photonics", sub: "Optical Mfg", price: 0, change: 0, rating: "Buy", analysts: 72, targetUpside: 18, revGrowth: 20, epsGrowth: 25, mcap: "16B", catalyst: "AI 광학 계약제조 리더", quality: 2, valuation: 2, desc: "광학 정밀 EMS. 수요 증가 직접 수혜.", hi: 0, lo: 0, avg: 0, factors: { volatility: 6, value: 6, size: 5, momentum: 7, beta: 6, outlook: 7 }, isNew: false },
+  { ticker: "MTSI", name: "MACOM", sector: "photonics", sub: "Analog+Photonic", price: 0, change: 0, rating: "Buy", analysts: 70, targetUpside: 28, revGrowth: 22, epsGrowth: 35, mcap: "17B", catalyst: "반도체-포토닉스 하이브리드 +130%", quality: 2, valuation: 2, desc: "아날로그+광학 하이브리드.", hi: 0, lo: 0, avg: 0, factors: { volatility: 7, value: 5, size: 5, momentum: 8, beta: 7, outlook: 8 }, isNew: false },
+  { ticker: "MKSI", name: "MKS Instruments", sector: "photonics", sub: "Equipment", price: 0, change: 0, rating: "Buy", analysts: 68, targetUpside: 15, revGrowth: 12, epsGrowth: 24, mcap: "17B", catalyst: "다양한 포토닉스 노출", quality: 2, valuation: 2, desc: "포토닉스 장비·계측.", hi: 0, lo: 0, avg: 0, factors: { volatility: 6, value: 6, size: 5, momentum: 6, beta: 6, outlook: 7 }, isNew: false },
+  { ticker: "IPGP", name: "IPG Photonics", sector: "photonics", sub: "Industrial Lasers", price: 0, change: 0, rating: "Buy", analysts: 62, targetUpside: 30, revGrowth: 10, epsGrowth: 18, mcap: "6B", catalyst: "자동화·EV 리쇼어링 +59%", quality: 2, valuation: 3, desc: "산업용 파이버 레이저 1위.", hi: 0, lo: 0, avg: 0, factors: { volatility: 7, value: 5, size: 4, momentum: 7, beta: 7, outlook: 6 }, isNew: false },
+  { ticker: "AAOI", name: "Applied Opto", sector: "photonics", sub: "Transceivers", price: 0, change: 0, rating: "Buy", analysts: 60, targetUpside: 35, revGrowth: 40, epsGrowth: 120, mcap: "4B", catalyst: "400G/800G 트랜시버 순수 플레이", quality: 2, valuation: 3, desc: "400G/800G 트랜시버 전문.", hi: 0, lo: 0, avg: 0, factors: { volatility: 9, value: 4, size: 3, momentum: 8, beta: 9, outlook: 7 }, isNew: false },
+  // AI Infra
+  { ticker: "NVDA", name: "NVIDIA", sector: "infra", sub: "GPU & AI", price: 199.81, change: 0, rating: "Strong Buy", analysts: 92, targetUpside: 15, revGrowth: 55, epsGrowth: 60, mcap: "4.87T", catalyst: "Rubin H2 2026, $3-4T 인프라", quality: 3, valuation: 1, desc: "AI GPU 절대 강자. 시총 $4.87T.", hi: 250, lo: 130, avg: 210, factors: { volatility: 7, value: 5, size: 10, momentum: 8, beta: 7, outlook: 10 }, isNew: false },
+  { ticker: "INTC", name: "Intel", sector: "infra", sub: "CPU & Foundry", price: 68.49, change: 5.47, rating: "Hold", analysts: 55, targetUpside: 12, revGrowth: 8, epsGrowth: 45, mcap: "296B", catalyst: "18A 공정, 파운드리 분사", quality: 2, valuation: 2, desc: "18A 전환 중. 파운드리 분사 추진.", hi: 85, lo: 25, avg: 55, factors: { volatility: 7, value: 7, size: 9, momentum: 7, beta: 6, outlook: 6 }, isNew: true },
+  { ticker: "ORCL", name: "Oracle", sector: "infra", sub: "Cloud & AI", price: 178.36, change: 5.04, rating: "Buy", analysts: 75, targetUpside: 20, revGrowth: 15, epsGrowth: 22, mcap: "498B", catalyst: "OpenAI $30B, $45-50B 조달", quality: 3, valuation: 2, desc: "OpenAI $30B 계약. AI 클라우드 급전환.", hi: 350, lo: 140, avg: 250, factors: { volatility: 7, value: 5, size: 9, momentum: 7, beta: 6, outlook: 8 }, isNew: true },
+  { ticker: "AVGO", name: "Broadcom", sector: "infra", sub: "Networking", price: 402.47, change: 0, rating: "Strong Buy", analysts: 88, targetUpside: 18, revGrowth: 22, epsGrowth: 30, mcap: "934B", catalyst: "맞춤 AI칩 리더, VMware 통합", quality: 3, valuation: 2, desc: "하이퍼스케일러 커스텀 AI칩 선도.", hi: 500, lo: 200, avg: 420, factors: { volatility: 6, value: 6, size: 9, momentum: 8, beta: 6, outlook: 9 }, isNew: false },
+  { ticker: "VRT", name: "Vertiv", sector: "infra", sub: "Cooling", price: 0, change: 0, rating: "Buy", analysts: 80, targetUpside: 25, revGrowth: 34, epsGrowth: 47, mcap: "72B", catalyst: "252% 주문, NVIDIA Rubin 냉각", quality: 3, valuation: 2, desc: "DC 냉각·전력 통합. NVIDIA 파트너.", hi: 0, lo: 0, avg: 0, factors: { volatility: 7, value: 5, size: 7, momentum: 8, beta: 7, outlook: 9 }, isNew: false },
+  { ticker: "APH", name: "Amphenol", sector: "infra", sub: "Interconnects", price: 0, change: 0, rating: "Buy", analysts: 76, targetUpside: 16, revGrowth: 20, epsGrowth: 28, mcap: "110B", catalyst: "DC 인터커넥트 33%", quality: 3, valuation: 1, desc: "커넥터 1위. DC 인터커넥트 33%.", hi: 0, lo: 0, avg: 0, factors: { volatility: 4, value: 6, size: 8, momentum: 7, beta: 4, outlook: 8 }, isNew: false },
+  { ticker: "DELL", name: "Dell Tech", sector: "infra", sub: "AI Servers", price: 0, change: 0, rating: "Buy", analysts: 74, targetUpside: 20, revGrowth: 19, epsGrowth: 27, mcap: "100B", catalyst: "AI 주문 $64B, 매출 $113B", quality: 2, valuation: 2, desc: "AI 서버 1위. 백로그 $43B.", hi: 0, lo: 0, avg: 0, factors: { volatility: 6, value: 7, size: 8, momentum: 7, beta: 6, outlook: 8 }, isNew: false },
+  { ticker: "CRDO", name: "Credo Tech", sector: "infra", sub: "High-Speed Cables", price: 0, change: 0, rating: "Buy", analysts: 72, targetUpside: 30, revGrowth: 200, epsGrowth: 300, mcap: "18B", catalyst: "매출 3x→$406M, AEC 필수", quality: 3, valuation: 2, desc: "AEC 케이블 혁신. 매출 3배 성장.", hi: 0, lo: 0, avg: 0, factors: { volatility: 9, value: 3, size: 4, momentum: 9, beta: 9, outlook: 8 }, isNew: false },
+  { ticker: "EME", name: "EMCOR", sector: "infra", sub: "DC Construction", price: 0, change: 0, rating: "Buy", analysts: 68, targetUpside: 15, revGrowth: 18, epsGrowth: 22, mcap: "28B", catalyst: "DC 전기·냉각·소방", quality: 2, valuation: 2, desc: "DC 건설 인프라 전문.", hi: 0, lo: 0, avg: 0, factors: { volatility: 5, value: 6, size: 6, momentum: 7, beta: 5, outlook: 7 }, isNew: false },
+  // Materials
+  { ticker: "FCX", name: "Freeport-McMoRan", sector: "materials", sub: "Copper", price: 68.28, change: -0.61, rating: "Buy", analysts: 74, targetUpside: 18, revGrowth: 12, epsGrowth: 25, mcap: "97B", catalyst: "세계 최대 구리 광산", quality: 3, valuation: 2, desc: "세계 최대 상장 구리 광산.", hi: 85, lo: 40, avg: 70, factors: { volatility: 7, value: 6, size: 8, momentum: 6, beta: 7, outlook: 7 }, isNew: true },
+  { ticker: "SCCO", name: "Southern Copper", sector: "materials", sub: "Copper", price: 188.24, change: -0.56, rating: "Buy", analysts: 65, targetUpside: 12, revGrowth: 10, epsGrowth: 18, mcap: "145B", catalyst: "중남미 최대 구리, 고배당", quality: 3, valuation: 1, desc: "중남미 최대 구리. 안정 고배당.", hi: 230, lo: 100, avg: 195, factors: { volatility: 5, value: 6, size: 8, momentum: 5, beta: 5, outlook: 6 }, isNew: true },
+  { ticker: "LAC", name: "Lithium Americas", sector: "materials", sub: "Lithium", price: 4.87, change: 6.80, rating: "Buy", analysts: 60, targetUpside: 55, revGrowth: 0, epsGrowth: 0, mcap: "1.1B", catalyst: "Thacker Pass 미국 최대 리튬", quality: 1, valuation: 3, desc: "미국 최대 리튬 프로젝트.", hi: 10, lo: 2.5, avg: 7, factors: { volatility: 10, value: 3, size: 2, momentum: 5, beta: 9, outlook: 6 }, isNew: true },
+  { ticker: "BHP", name: "BHP Group", sector: "materials", sub: "Diversified Mining", price: 79.47, change: -0.01, rating: "Hold", analysts: 62, targetUpside: 8, revGrowth: 4, epsGrowth: 6, mcap: "401B", catalyst: "세계 최대 광산, 안정 배당", quality: 3, valuation: 2, desc: "세계 최대 광산 기업.", hi: 90, lo: 50, avg: 75, factors: { volatility: 4, value: 7, size: 10, momentum: 4, beta: 4, outlook: 5 }, isNew: true },
+  { ticker: "SBSW", name: "Sibanye Stillwater", sector: "materials", sub: "PGM Mining", price: 13.09, change: -0.76, rating: "Hold", analysts: 48, targetUpside: 20, revGrowth: 8, epsGrowth: 0, mcap: "9.3B", catalyst: "PGM, 수소·연료전지 소재", quality: 1, valuation: 2, desc: "백금족 금속 생산. 수소경제 수혜.", hi: 22, lo: 5, avg: 14, factors: { volatility: 9, value: 5, size: 4, momentum: 5, beta: 8, outlook: 5 }, isNew: true },
+  { ticker: "VAL", name: "Valaris", sector: "materials", sub: "Offshore Drilling", price: 94.60, change: 3.20, rating: "Buy", analysts: 68, targetUpside: 25, revGrowth: 12, epsGrowth: 30, mcap: "7B", catalyst: "해양 시추 1위", quality: 2, valuation: 3, desc: "해양 시추 1위. 가스 탐사 증가.", hi: 120, lo: 40, avg: 100, factors: { volatility: 8, value: 6, size: 4, momentum: 6, beta: 8, outlook: 6 }, isNew: true },
+  { ticker: "XPRO", name: "Expro Group", sector: "materials", sub: "Energy Services", price: 16.11, change: -0.31, rating: "Hold", analysts: 55, targetUpside: 35, revGrowth: 5, epsGrowth: 10, mcap: "1.8B", catalyst: "유정 관리·해저 서비스", quality: 1, valuation: 3, desc: "에너지 서비스. 인프라 확장.", hi: 25, lo: 10, avg: 20, factors: { volatility: 7, value: 5, size: 3, momentum: 4, beta: 7, outlook: 5 }, isNew: true },
+  { ticker: "PALL", name: "abrdn Palladium", sector: "materials", sub: "Palladium ETF", price: 141.58, change: -0.90, rating: "ETF", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, mcap: "0.5B", catalyst: "팔라듐 실물 ETF", quality: 0, valuation: 0, desc: "실물 팔라듐 ETF.", hi: 0, lo: 0, avg: 0, factors: { volatility: 7, value: 5, size: 2, momentum: 4, beta: 6, outlook: 5 }, isNew: true },
+];
 
-    .tabs { display: flex; gap: 3px; padding: 12px 24px; overflow-x: auto; border-bottom: 1px solid rgba(255,255,255,0.03); }
-    .tab-btn { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 9px; border: 1px solid transparent; background: transparent; color: #555; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all 0.2s ease; }
-    .tab-count { font-size: 10px; font-weight: 700; font-family: 'JetBrains Mono', monospace; padding: 1px 6px; border-radius: 5px; background: rgba(255,255,255,0.04); }
+const SECTOR_META = {
+  nuclear: { label: "Nuclear & Uranium", icon: "☢️", color: "#00E5A0", colorDim: "rgba(0,229,160,0.12)", desc: "핵분열·핵융합·우라늄 — AI DC 기저전력" },
+  power: { label: "AI Power", icon: "⚡", color: "#FFD93D", colorDim: "rgba(255,217,61,0.12)", desc: "연료전지·가스터빈·DC 전력·산업가스" },
+  photonics: { label: "Photonics", icon: "🔬", color: "#7B61FF", colorDim: "rgba(123,97,255,0.12)", desc: "레이저·광학 트랜시버·실리콘 포토닉스" },
+  infra: { label: "AI Infra", icon: "🏗️", color: "#FF6B35", colorDim: "rgba(255,107,53,0.12)", desc: "GPU·서버·냉각·클라우드·네트워킹" },
+  materials: { label: "Materials", icon: "⛏️", color: "#4ECDC4", colorDim: "rgba(78,205,196,0.12)", desc: "구리·리튬·팔라듐·에너지 서비스" },
+  matrix: { label: "Matrix", icon: "🎯", color: "#00E5FF", colorDim: "rgba(0,229,255,0.12)", desc: "Quality × Valuation 투자 매트릭스" },
+};
 
-    .controls { padding: 16px 24px; }
-    .sector-desc { font-size: 12px; color: #7A7F88; margin-bottom: 12px; line-height: 1.6; }
-    .controls-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .search-wrap { flex: 1 1 220px; position: relative; }
-    .search-input { width: 100%; padding: 8px 12px 8px 30px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.025); color: #E5E7EB; font-size: 12px; outline: none; }
-    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; opacity: 0.3; }
-    .sort-buttons { display: flex; gap: 3px; flex-wrap: wrap; }
-    .sort-btn { padding: 6px 10px; border-radius: 7px; font-size: 10px; font-weight: 600; border: 1px solid rgba(255,255,255,0.05); background: transparent; color: #555; cursor: pointer; transition: all 0.2s ease; }
+const SORT_OPTIONS = [
+  { key: "default", label: "기본" }, { key: "change", label: "등락률" },
+  { key: "targetUpside", label: "상승여력" }, { key: "epsGrowth", label: "EPS" }, { key: "revGrowth", label: "매출" },
+];
 
-    .stats-wrap { padding: 0 24px; }
-    .stats-grid { display: grid; gap: 1px; background: rgba(255,255,255,0.03); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
-    .stat-card { background: #0A0C12; padding: 14px 10px; text-align: center; }
-    .stat-label { font-size: 9px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
-    .stat-value { font-size: 18px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
-    .stat-sub { font-size: 10px; color: #555; margin-top: 2px; }
+const MATRIX_ACTIONS = {
+  "3-3": { label: "Strong Buy", sub: "The Jackpot", color: "#00E5A0", bg: "rgba(0,229,160,0.08)" },
+  "3-2": { label: "Buy", sub: "", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
+  "3-1": { label: "Patience", sub: "Wait for drop", color: "#f59e0b", bg: "rgba(245,158,11,0.06)" },
+  "2-3": { label: "Buy", sub: "", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
+  "2-2": { label: "Hold", sub: "", color: "#a78bfa", bg: "rgba(167,139,250,0.06)" },
+  "2-1": { label: "Avoid", sub: "", color: "#ef4444", bg: "rgba(239,68,68,0.05)" },
+  "1-3": { label: "Speculative", sub: "", color: "#f59e0b", bg: "rgba(245,158,11,0.05)" },
+  "1-2": { label: "Avoid", sub: "", color: "#ef4444", bg: "rgba(239,68,68,0.05)" },
+  "1-1": { label: "Avoid", sub: "The Worst", color: "#ef4444", bg: "rgba(239,68,68,0.08)" },
+};
 
-    .grid { padding: 0 24px 32px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
-    .card { background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.05); border-radius: 14px; padding: 18px; transition: all 0.25s ease; animation: fadeIn 0.4s ease both; }
-    .card:hover { transform: translateY(-2px); }
-    .card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 10px; }
-    .ticker-row { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; flex-wrap: wrap; }
-    .ticker { font-size: 17px; font-weight: 800; color: #F0F0F0; font-family: 'JetBrains Mono', monospace; }
-    .company { font-size: 11px; color: #7A7F88; font-weight: 500; }
-    .badge { padding: 2px 8px; border-radius: 6px; font-size: 9px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; }
-    .price-box { text-align: right; }
-    .price { font-size: 16px; font-weight: 700; color: #E5E7EB; font-family: 'JetBrains Mono', monospace; }
-    .daychg { font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-    .sub-tag { display: inline-block; margin-bottom: 12px; border-radius: 6px; padding: 2px 8px; font-size: 10px; font-weight: 600; }
+function RadarChart({ factors, color }) {
+  const labels = ["변동성", "밸류", "사이즈", "모멘텀", "베타", "전망"];
+  const keys = ["volatility", "value", "size", "momentum", "beta", "outlook"];
+  const cx = 90, cy = 90, r = 65;
+  const angles = keys.map((_, i) => (Math.PI * 2 * i) / keys.length - Math.PI / 2);
+  const pts = keys.map((k, i) => ({ x: cx + Math.cos(angles[i]) * r * ((factors[k]||5)/10), y: cy + Math.sin(angles[i]) * r * ((factors[k]||5)/10) }));
+  return (
+    <svg viewBox="0 0 180 180" style={{ width: "100%", maxWidth: "200px" }}>
+      {[0.25,0.5,0.75,1].map((lv,li) => <polygon key={li} points={angles.map(a=>`${cx+Math.cos(a)*r*lv},${cy+Math.sin(a)*r*lv}`).join(" ")} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="0.5"/>)}
+      {angles.map((a,i) => <g key={i}><line x1={cx} y1={cy} x2={cx+Math.cos(a)*r} y2={cy+Math.sin(a)*r} stroke="rgba(255,255,255,0.06)" strokeWidth="0.5"/><text x={cx+Math.cos(a)*(r+16)} y={cy+Math.sin(a)*(r+16)} fill="#8A8F98" fontSize="8" textAnchor="middle" dominantBaseline="middle">{labels[i]}</text></g>)}
+      <polygon points={pts.map(p=>`${p.x},${p.y}`).join(" ")} fill={color+"25"} stroke={color} strokeWidth="1.5"/>
+      {pts.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r="2.5" fill={color}/>)}
+    </svg>
+  );
+}
 
-    .metric { margin-bottom: 5px; }
-    .metric-row { display: flex; justify-content: space-between; font-size: 10px; color: #6B7280; margin-bottom: 2px; }
-    .metric-value { font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
-    .metric-track { height: 3px; background: rgba(255,255,255,0.04); border-radius: 2px; overflow: hidden; }
-    .metric-fill { height: 100%; border-radius: 2px; }
+function TargetChart({ stock, color }) {
+  if (!stock.hi||!stock.lo) return null;
+  const mn=stock.lo*0.85, mx=stock.hi*1.08, range=mx-mn;
+  const y=v=>100-((v-mn)/range)*100;
+  return (
+    <svg viewBox="0 0 220 120" style={{ width: "100%", maxWidth: "240px" }}>
+      {[stock.hi,stock.avg,stock.price,stock.lo].filter(Boolean).map((v,i)=><line key={i} x1="30" y1={y(v)*1.1+5} x2="200" y2={y(v)*1.1+5} stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" strokeDasharray="3,3"/>)}
+      <line x1="30" y1={y(stock.price)*1.1+5} x2="200" y2={y(stock.price)*1.1+5} stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>
+      <line x1="90" y1={y(stock.price)*1.1+5} x2="190" y2={y(stock.hi)*1.1+5} stroke="#00E5A0" strokeWidth="1" strokeDasharray="4,2"/>
+      <line x1="90" y1={y(stock.price)*1.1+5} x2="190" y2={y(stock.avg)*1.1+5} stroke="#FFD93D" strokeWidth="1" strokeDasharray="4,2"/>
+      <line x1="90" y1={y(stock.price)*1.1+5} x2="190" y2={y(stock.lo)*1.1+5} stroke="#FF6B6B" strokeWidth="1" strokeDasharray="4,2"/>
+      <text x="195" y={y(stock.hi)*1.1+4} fill="#00E5A0" fontSize="8" fontWeight="700">최고</text>
+      <text x="195" y={y(stock.hi)*1.1+13} fill="#00E5A0" fontSize="9" fontFamily="monospace">${stock.hi}</text>
+      <text x="195" y={y(stock.avg)*1.1+4} fill="#FFD93D" fontSize="8" fontWeight="700">평균</text>
+      <text x="195" y={y(stock.avg)*1.1+13} fill="#FFD93D" fontSize="9" fontFamily="monospace">${stock.avg}</text>
+      <text x="195" y={y(stock.lo)*1.1+4} fill="#FF6B6B" fontSize="8" fontWeight="700">최저</text>
+      <text x="195" y={y(stock.lo)*1.1+13} fill="#FF6B6B" fontSize="9" fontFamily="monospace">${stock.lo}</text>
+      <text x="35" y={y(stock.price)*1.1+3} fill="#fff" fontSize="8">현재가</text>
+      <text x="35" y={y(stock.price)*1.1+14} fill="#fff" fontSize="10" fontWeight="700" fontFamily="monospace">${stock.price}</text>
+      <circle cx="90" cy={y(stock.price)*1.1+5} r="3" fill="#fff"/><circle cx="190" cy={y(stock.hi)*1.1+5} r="3" fill="#00E5A0"/><circle cx="190" cy={y(stock.avg)*1.1+5} r="3" fill="#FFD93D"/><circle cx="190" cy={y(stock.lo)*1.1+5} r="3" fill="#FF6B6B"/>
+    </svg>
+  );
+}
 
-    .analyst-row { display: flex; align-items: center; gap: 5px; margin: 8px 0; }
-    .analyst-label { font-size: 9px; color: #555; white-space: nowrap; }
-    .analyst-bars { flex: 1; display: flex; gap: 1.5px; }
-    .analyst-bar { flex: 1; height: 5px; border-radius: 2px; background: rgba(255,255,255,0.04); }
-    .analyst-num { font-size: 10px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-
-    .catalyst { font-size: 11px; color: #8A8F98; line-height: 1.5; padding: 8px 10px; background: rgba(255,255,255,0.015); border-radius: 8px; }
-    .catalyst-label { font-weight: 700; font-size: 8px; text-transform: uppercase; letter-spacing: 0.6px; }
-    .empty { grid-column: 1 / -1; text-align: center; padding: 50px; color: #555; font-size: 13px; }
-
-    @media (max-width: 640px) {
-      .header, .tabs, .controls, .stats-wrap, .grid { padding-left: 16px; padding-right: 16px; }
-      .grid { grid-template-columns: 1fr; }
-    }
-  </style>
-</head>
-<body>
-  <div class="app">
-    <div class="header">
-      <div class="header-top">
-        <div class="pulse-dot" id="pulseDot"></div>
-        <span class="eyebrow">Market Intelligence · April 17, 2026</span>
+function Bar({ v, mx, c, lb }) {
+  return (
+    <div style={{ marginBottom: "5px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#8A8F98", marginBottom: "2px" }}>
+        <span>{lb}</span>
+        <span style={{ color: v>0?c:v===0?"#555":"#FF6B6B", fontWeight: 600, fontFamily: "monospace" }}>{v>0?`+${v}%`:v===0?"—":`${v}%`}</span>
       </div>
-      <h1 class="title" id="title">AI / Energy / SA Dashboard</h1>
-      <p class="subtitle" id="subtitle"></p>
-    </div>
-
-    <div class="tabs" id="tabs"></div>
-
-    <div class="controls">
-      <p class="sector-desc" id="sectorDesc"></p>
-      <div class="controls-row">
-        <div class="search-wrap">
-          <input id="searchInput" class="search-input" type="text" placeholder="Search ticker / name..." />
-          <span class="search-icon">🔍</span>
-        </div>
-        <div class="sort-buttons" id="sortButtons"></div>
+      <div style={{ height: "4px", background: "rgba(255,255,255,0.04)", borderRadius: "2px" }}>
+        <div style={{ height: "100%", width: `${Math.min((Math.abs(v)/mx)*100,100)}%`, borderRadius: "2px", background: `linear-gradient(90deg,${c}88,${c})`, transition: "width .5s" }}/>
       </div>
     </div>
+  );
+}
 
-    <div class="stats-wrap">
-      <div class="stats-grid" id="statsGrid"></div>
+function Card({ s, sc, i }) {
+  const [expanded, setExpanded] = useState(false);
+  const etf = s.rating === "ETF";
+  const rc = s.rating.includes("Strong")?"#00E5A0":s.rating==="Buy"?"#5EDFB0":s.rating==="ETF"?"#4ECDC4":"#E5C84C";
+  return (
+    <div style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "14px", padding: "18px", animation: `fi .3s ease ${i*.03}s both`, position: "relative", cursor: "pointer" }} onClick={()=>setExpanded(!expanded)}>
+      {s.isNew&&<div style={{ position: "absolute", top: "8px", right: "8px", background: "rgba(255,107,53,0.18)", border: "1px solid rgba(255,107,53,0.3)", borderRadius: "4px", padding: "2px 6px", fontSize: "9px", fontWeight: 800, color: "#FF6B35" }}>NEW</div>}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "20px", fontWeight: 800, color: "#F0F0F0", fontFamily: "monospace" }}>{s.ticker}</span>
+            <span style={{ padding: "3px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 700, background: rc+"18", color: rc, border: `1px solid ${rc}40` }}>{s.rating}</span>
+          </div>
+          <div style={{ fontSize: "13px", color: "#9CA3AF", marginTop: "3px" }}>{s.name}</div>
+        </div>
+        {s.price>0&&<div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: "18px", fontWeight: 700, color: "#E5E7EB", fontFamily: "monospace" }}>${s.price<100?s.price.toFixed(2):s.price.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+          <div style={{ fontSize: "13px", fontWeight: 600, fontFamily: "monospace", color: s.change>0?"#00E5A0":s.change<0?"#FF6B6B":"#6B7280" }}>{s.change>0?"▲+":s.change<0?"▼":""}{s.change.toFixed(2)}%</div>
+        </div>}
+      </div>
+      <div style={{ display: "flex", gap: "6px", marginBottom: "10px", flexWrap: "wrap" }}>
+        <span style={{ background: sc+"14", border: `1px solid ${sc}22`, borderRadius: "5px", padding: "2px 8px", fontSize: "11px", color: sc, fontWeight: 600 }}>{s.sub}</span>
+        <span style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "5px", padding: "2px 8px", fontSize: "11px", color: "#9CA3AF", fontFamily: "monospace" }}>시총 ${s.mcap}</span>
+      </div>
+      {!etf&&<><Bar v={s.targetUpside} mx={100} c={sc} lb="목표 상승률"/><Bar v={s.revGrowth} mx={200} c="#4ECDC4" lb="매출 성장"/><Bar v={s.epsGrowth} mx={200} c="#FFD93D" lb="EPS 성장"/>
+        <div style={{ display: "flex", alignItems: "center", gap: "5px", margin: "6px 0" }}>
+          <span style={{ fontSize: "11px", color: "#6B7280" }}>신뢰</span>
+          <div style={{ flex: 1, display: "flex", gap: "1.5px" }}>{[...Array(10)].map((_,j)=><div key={j} style={{ flex: 1, height: "5px", borderRadius: "2px", background: j<Math.round(s.analysts/10)?sc:"rgba(255,255,255,0.04)" }}/>)}</div>
+          <span style={{ fontSize: "11px", color: sc, fontWeight: 700, fontFamily: "monospace" }}>{s.analysts}</span>
+        </div>
+      </>}
+      <div style={{ fontSize: "12px", color: "#9CA3AF", lineHeight: 1.5, padding: "8px 10px", background: "rgba(255,255,255,0.015)", borderRadius: "7px", borderLeft: `2px solid ${sc}30` }}>
+        <span style={{ color: sc, fontWeight: 700, fontSize: "9px", textTransform: "uppercase" }}>촉매 </span>{s.catalyst}
+      </div>
+      {expanded&&<div style={{ marginTop: "14px", padding: "16px", background: "rgba(0,0,0,0.3)", borderRadius: "12px", border: `1px solid ${sc}20`, animation: "fi .25s ease both" }}>
+        <div style={{ fontSize: "13px", color: "#D1D5DB", lineHeight: 1.7, marginBottom: "16px" }}>{s.desc}</div>
+        {s.hi>0&&s.lo>0&&<div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+          <div style={{ flex: "1 1 220px" }}><div style={{ fontSize: "12px", color: "#6B7280", marginBottom: "8px", fontWeight: 600 }}>📊 12개월 전망</div><TargetChart stock={s} color={sc}/></div>
+          <div style={{ flex: "1 1 180px" }}><div style={{ fontSize: "12px", color: "#6B7280", marginBottom: "8px", fontWeight: 600 }}>🕸️ 팩터 분석</div><RadarChart factors={s.factors} color={sc}/></div>
+        </div>}
+        {(!s.hi||!s.lo)&&s.factors&&<div style={{ maxWidth: "200px" }}><div style={{ fontSize: "12px", color: "#6B7280", marginBottom: "8px", fontWeight: 600 }}>🕸️ 팩터 분석</div><RadarChart factors={s.factors} color={sc}/></div>}
+      </div>}
+      <div style={{ textAlign: "center", marginTop: "8px", fontSize: "10px", color: "#555" }}>{expanded?"▲ 접기":"▼ 상세보기"}</div>
     </div>
+  );
+}
 
-    <div class="grid" id="grid"></div>
-  </div>
+// ── Investment Matrix View ──
+function MatrixView() {
+  const matrixStocks = ALL_STOCKS.filter(s => s.quality > 0 && s.valuation > 0);
+  const grid = {};
+  for (let q=1;q<=3;q++) for (let v=1;v<=3;v++) grid[`${q}-${v}`] = [];
+  matrixStocks.forEach(s => { const k=`${s.quality}-${s.valuation}`; if(grid[k]) grid[k].push(s); });
 
-  <script>
-    const SECTORS = {
-      nuclear: {
-        label: "Nuclear & Uranium",
-        icon: "☢️",
-        color: "#22D3EE",
-        colorDim: "rgba(34,211,238,0.10)",
-        description: "원전, 우라늄, SMR, 핵연료",
-        stocks: [
-          { ticker: "CEG", name: "Constellation Energy", sub: "Nuclear Utility", price: 299.13, dayChg: 1.49, rating: "Buy", analysts: 72, targetUpside: 12, revGrowth: 8, epsGrowth: 13, catalyst: "Largest US nuclear fleet" },
-          { ticker: "LEU", name: "Centrus Energy", sub: "Uranium Enrichment", price: 202.16, dayChg: 2.21, rating: "Buy", analysts: 68, targetUpside: 25, revGrowth: 22, epsGrowth: 40, catalyst: "HALEU and enrichment exposure" },
-          { ticker: "CCJ", name: "Cameco", sub: "Uranium Mining", price: 120.25, dayChg: 0.96, rating: "Buy", analysts: 74, targetUpside: 20, revGrowth: 30, epsGrowth: 55, catalyst: "Large uranium producer" },
-          { ticker: "OKLO", name: "Oklo", sub: "Advanced Nuclear", price: 64.20, dayChg: 1.34, rating: "Buy", analysts: 70, targetUpside: 40, revGrowth: 0, epsGrowth: 0, catalyst: "Microreactor platform" },
-          { ticker: "UEC", name: "Uranium Energy", sub: "Uranium Mining", price: 15.13, dayChg: 2.09, rating: "Buy", analysts: 65, targetUpside: 35, revGrowth: 45, epsGrowth: 0, catalyst: "US uranium exposure" },
-          { ticker: "NNE", name: "Nano Nuclear Energy", sub: "Micro Reactors", price: 24.58, dayChg: 1.19, rating: "Buy", analysts: 58, targetUpside: 55, revGrowth: 0, epsGrowth: 0, catalyst: "Portable reactor concepts" },
-          { ticker: "SMR", name: "NuScale Power", sub: "SMR", price: 11.41, dayChg: -2.56, rating: "Hold", analysts: 50, targetUpside: 30, revGrowth: 0, epsGrowth: 0, catalyst: "SMR design optionality" },
-          { ticker: "DNN", name: "Denison Mines", sub: "Uranium Mining", price: 3.93, dayChg: 1.29, rating: "Buy", analysts: 62, targetUpside: 40, revGrowth: 0, epsGrowth: 0, catalyst: "Athabasca exposure" },
-          { ticker: "UUUU", name: "Energy Fuels", sub: "Uranium & REE", price: 20.91, dayChg: -0.43, rating: "Buy", analysts: 64, targetUpside: 30, revGrowth: 35, epsGrowth: 50, catalyst: "Uranium plus rare earths" },
-          { ticker: "URA", name: "Global X Uranium ETF", sub: "ETF", price: 55.27, dayChg: 0.78, rating: "ETF", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Broad uranium basket" },
-          { ticker: "URNM", name: "Sprott Uranium Miners ETF", sub: "ETF", price: 69.42, dayChg: 0.76, rating: "ETF", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Pure-play uranium miners" }
-        ]
-      },
+  const qLabels = ["", "Bad Co.", "Good Co.", "Great Co."];
+  const vLabels = ["", "비싼 가격", "적정 가격", "좋은 가격"];
 
-      power: {
-        label: "AI Power & Grid",
-        icon: "⚡",
-        color: "#00E5A0",
-        colorDim: "rgba(0,229,160,0.10)",
-        description: "전력, 연료전지, 데이터센터 전력, 가스",
-        stocks: [
-          { ticker: "GEV", name: "GE Vernova", sub: "Power Equipment", price: 978.15, dayChg: -0.79, rating: "Buy", analysts: 78, targetUpside: 18, revGrowth: 14, epsGrowth: 82, catalyst: "Grid and turbine buildout" },
-          { ticker: "BE", name: "Bloom Energy", sub: "Fuel Cells", price: 209.97, dayChg: -1.81, rating: "Buy", analysts: 65, targetUpside: 22, revGrowth: 58, epsGrowth: 140, catalyst: "Behind-the-meter power" },
-          { ticker: "WULF", name: "TeraWulf", sub: "AI Data Center", price: 19.31, dayChg: -1.86, rating: "Buy", analysts: 60, targetUpside: 45, revGrowth: 150, epsGrowth: 0, catalyst: "HPC and AI pivot" },
-          { ticker: "NBIS", name: "Nebius Group", sub: "GPU Cloud", price: 165.26, dayChg: -0.91, rating: "Buy", analysts: 70, targetUpside: 45, revGrowth: 830, epsGrowth: 0, catalyst: "AI cloud growth" },
-          { ticker: "EQT", name: "EQT Corp", sub: "Natural Gas", price: null, dayChg: null, rating: "Buy", analysts: 69, targetUpside: 16, revGrowth: 18, epsGrowth: 35, catalyst: "Gas demand from AI power" },
-          { ticker: "APD", name: "Air Products", sub: "Industrial Gases", price: 297.26, dayChg: 0.69, rating: "Hold", analysts: 60, targetUpside: 10, revGrowth: 6, epsGrowth: 10, catalyst: "Industrial gas and hydrogen" },
-          { ticker: "LIN", name: "Linde", sub: "Industrial Gases", price: 499.08, dayChg: 0.23, rating: "Buy", analysts: 72, targetUpside: 12, revGrowth: 8, epsGrowth: 12, catalyst: "Gases for semis and industry" },
-          { ticker: "VAL", name: "Valaris", sub: "Offshore Drilling", price: 94.60, dayChg: 3.20, rating: "Buy", analysts: 65, targetUpside: 20, revGrowth: 10, epsGrowth: 25, catalyst: "Energy security demand" },
-          { ticker: "XPRO", name: "Expro Group", sub: "Energy Services", price: 16.11, dayChg: -0.31, rating: "Hold", analysts: 52, targetUpside: 25, revGrowth: 8, epsGrowth: 12, catalyst: "Energy infra services" },
-          { ticker: "PBR", name: "Petrobras", sub: "Integrated Energy", price: 21.49, dayChg: 4.63, rating: "Buy", analysts: 55, targetUpside: 10, revGrowth: 8, epsGrowth: 10, catalyst: "Oil and dividend profile" }
-        ]
-      },
-
-      photonics: {
-        label: "Photonics & Optical",
-        icon: "🔬",
-        color: "#A78BFA",
-        colorDim: "rgba(167,139,250,0.10)",
-        description: "광통신, 레이저, 테스트, 실리콘 포토닉스",
-        stocks: [
-          { ticker: "LITE", name: "Lumentum", sub: "Optical Modules", price: 890.93, dayChg: 8.12, rating: "Strong Buy", analysts: 85, targetUpside: 15, revGrowth: 77, epsGrowth: 200, catalyst: "Optical networking demand" },
-          { ticker: "COHR", name: "Coherent", sub: "Photonic Modules", price: 328.01, dayChg: 6.43, rating: "Strong Buy", analysts: 82, targetUpside: 20, revGrowth: 15, epsGrowth: 45, catalyst: "AI transceiver exposure" },
-          { ticker: "AAOI", name: "Applied Optoelectronics", sub: "Transceivers", price: 157.27, dayChg: 10.33, rating: "Buy", analysts: 60, targetUpside: 35, revGrowth: 40, epsGrowth: 120, catalyst: "400G/800G demand" },
-          { ticker: "AEHR", name: "Aehr Test Systems", sub: "Test", price: 80.78, dayChg: 10.33, rating: "Buy", analysts: 62, targetUpside: 25, revGrowth: 28, epsGrowth: 30, catalyst: "Burn-in and silicon carbide test" },
-          { ticker: "POET", name: "POET Technologies", sub: "Optical Interconnect", price: 7.34, dayChg: 5.31, rating: "Spec", analysts: 40, targetUpside: 30, revGrowth: 0, epsGrowth: 0, catalyst: "Optical engine optionality" },
-          { ticker: "VIAV", name: "Viavi Solutions", sub: "Network Test", price: 41.17, dayChg: 4.87, rating: "Buy", analysts: 58, targetUpside: 12, revGrowth: 8, epsGrowth: 10, catalyst: "Testing and optical tools" },
-          { ticker: "KEYS", name: "Keysight", sub: "Test & Measurement", price: 329.95, dayChg: 1.45, rating: "Buy", analysts: 68, targetUpside: 14, revGrowth: 10, epsGrowth: 16, catalyst: "Measurement tools for compute and networking" },
-          { ticker: "FORM", name: "FormFactor", sub: "Probe Cards", price: 127.69, dayChg: -1.49, rating: "Buy", analysts: 60, targetUpside: 18, revGrowth: 12, epsGrowth: 20, catalyst: "Semicap and testing exposure" },
-          { ticker: "CIEN", name: "Ciena", sub: "Optical Networking", price: 494.94, dayChg: 4.03, rating: "Buy", analysts: 66, targetUpside: 14, revGrowth: 9, epsGrowth: 15, catalyst: "Transport and optical network buildout" },
-          { ticker: "VICR", name: "Vicor", sub: "Power Modules", price: 202.98, dayChg: 4.52, rating: "Buy", analysts: 54, targetUpside: 10, revGrowth: 12, epsGrowth: 18, catalyst: "Power density for AI systems" }
-        ]
-      },
-
-      infra: {
-        label: "AI Infrastructure",
-        icon: "🏗️",
-        color: "#FF6B35",
-        colorDim: "rgba(255,107,53,0.10)",
-        description: "GPU, 클라우드, 서버, 네트워킹, 반도체",
-        stocks: [
-          { ticker: "NVDA", name: "NVIDIA", sub: "GPU", price: 198.28, dayChg: -0.30, rating: "Strong Buy", analysts: 92, targetUpside: 15, revGrowth: 55, epsGrowth: 60, catalyst: "AI compute leader" },
-          { ticker: "AMD", name: "AMD", sub: "Compute", price: 278.26, dayChg: 7.80, rating: "Buy", analysts: 80, targetUpside: 18, revGrowth: 24, epsGrowth: 32, catalyst: "AI accelerators and CPU share" },
-          { ticker: "INTC", name: "Intel", sub: "CPU & Foundry", price: 68.49, dayChg: 5.47, rating: "Hold", analysts: 55, targetUpside: 12, revGrowth: 5, epsGrowth: 15, catalyst: "Foundry and inference turnaround" },
-          { ticker: "ORCL", name: "Oracle", sub: "AI Cloud", price: 178.36, dayChg: 5.04, rating: "Buy", analysts: 72, targetUpside: 20, revGrowth: 15, epsGrowth: 22, catalyst: "AI cloud expansion" },
-          { ticker: "AVGO", name: "Broadcom", sub: "Networking & Custom AI", price: 398.37, dayChg: 0.42, rating: "Strong Buy", analysts: 88, targetUpside: 18, revGrowth: 22, epsGrowth: 30, catalyst: "Custom silicon and networking" },
-          { ticker: "MRVL", name: "Marvell", sub: "Custom AI & Optics", price: 133.35, dayChg: -0.93, rating: "Buy", analysts: 78, targetUpside: 22, revGrowth: 25, epsGrowth: 40, catalyst: "Cloud AI and optical connectivity" },
-          { ticker: "AMZN", name: "Amazon", sub: "Cloud", price: 249.71, dayChg: 0.48, rating: "Buy", analysts: 85, targetUpside: 16, revGrowth: 12, epsGrowth: 18, catalyst: "AWS and AI platform demand" },
-          { ticker: "GOOG", name: "Alphabet", sub: "Cloud & AI", price: 332.72, dayChg: -0.52, rating: "Buy", analysts: 84, targetUpside: 14, revGrowth: 13, epsGrowth: 17, catalyst: "Cloud and model deployment" },
-          { ticker: "PLTR", name: "Palantir", sub: "AI Software", price: 142.75, dayChg: 0.42, rating: "Buy", analysts: 66, targetUpside: 10, revGrowth: 24, epsGrowth: 28, catalyst: "AIP and government/commercial demand" },
-          { ticker: "CRWV", name: "CoreWeave", sub: "AI Cloud", price: 119.54, dayChg: 0.72, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Added from SA holdings / AI infra list" },
-          { ticker: "CORZ", name: "Core Scientific", sub: "Compute Infra", price: null, dayChg: null, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Added from SA holdings" },
-          { ticker: "IREN", name: "IREN", sub: "AI Data Center", price: null, dayChg: null, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Added from SA holdings" },
-          { ticker: "APLD", name: "Applied Digital", sub: "Data Center Infra", price: null, dayChg: null, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Added from SA holdings" },
-          { ticker: "CIFR", name: "Cipher Mining", sub: "Compute Infra", price: 17.35, dayChg: -3.64, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Added from SA holdings" },
-          { ticker: "HUT", name: "Hut 8", sub: "Compute Infra", price: null, dayChg: null, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Added from holdings list" },
-          { ticker: "BTDR", name: "Bitdeer", sub: "Compute / Mining", price: null, dayChg: null, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Added from holdings list" },
-          { ticker: "CLSK", name: "CleanSpark", sub: "Compute / Energy", price: null, dayChg: null, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Added from holdings list" },
-          { ticker: "SNDK", name: "Sandisk", sub: "Storage", price: 919.35, dayChg: 3.10, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Storage exposure" },
-          { ticker: "GFS", name: "GlobalFoundries", sub: "Foundry", price: 50.38, dayChg: 4.27, rating: "Buy", analysts: 62, targetUpside: 12, revGrowth: 8, epsGrowth: 10, catalyst: "Specialized foundry demand" },
-          { ticker: "TSM", name: "TSMC", sub: "Foundry", price: 363.32, dayChg: -3.14, rating: "Strong Buy", analysts: 90, targetUpside: 12, revGrowth: 20, epsGrowth: 26, catalyst: "Leading-edge foundry" },
-          { ticker: "TSEM", name: "Tower Semiconductor", sub: "Specialty Foundry", price: 214.84, dayChg: -0.37, rating: "Buy", analysts: 60, targetUpside: 12, revGrowth: 10, epsGrowth: 14, catalyst: "Specialty analog and RF" },
-          { ticker: "UMC", name: "UMC", sub: "Foundry", price: 10.61, dayChg: 6.63, rating: "Hold", analysts: 48, targetUpside: 8, revGrowth: 6, epsGrowth: 8, catalyst: "Mature node foundry exposure" },
-          { ticker: "MU", name: "Micron", sub: "Memory", price: 457.02, dayChg: 0.17, rating: "Buy", analysts: 84, targetUpside: 16, revGrowth: 30, epsGrowth: 50, catalyst: "HBM and memory cycle" }
-        ]
-      },
-
-      materials: {
-        label: "Materials & Metals",
-        icon: "⛏️",
-        color: "#F59E0B",
-        colorDim: "rgba(245,158,11,0.10)",
-        description: "구리, 리튬, 희토류, 배터리/전략금속",
-        stocks: [
-          { ticker: "FCX", name: "Freeport-McMoRan", sub: "Copper Mining", price: 68.28, dayChg: -0.61, rating: "Buy", analysts: 74, targetUpside: 18, revGrowth: 12, epsGrowth: 20, catalyst: "Copper demand" },
-          { ticker: "SCCO", name: "Southern Copper", sub: "Copper Mining", price: 188.24, dayChg: -0.56, rating: "Hold", analysts: 58, targetUpside: 10, revGrowth: 8, epsGrowth: 15, catalyst: "Low-cost copper producer" },
-          { ticker: "LAC", name: "Lithium Americas", sub: "Lithium", price: 4.87, dayChg: 6.80, rating: "Buy", analysts: 60, targetUpside: 50, revGrowth: 0, epsGrowth: 0, catalyst: "Thacker Pass optionality" },
-          { ticker: "BHP", name: "BHP", sub: "Diversified Mining", price: 79.47, dayChg: -0.01, rating: "Hold", analysts: 62, targetUpside: 8, revGrowth: 5, epsGrowth: 8, catalyst: "Copper and diversified mining" },
-          { ticker: "MP", name: "MP Materials", sub: "Rare Earths", price: 62.27, dayChg: 4.62, rating: "Buy", analysts: 70, targetUpside: 20, revGrowth: 14, epsGrowth: 18, catalyst: "US rare earth supply chain" },
-          { ticker: "CRML", name: "Critical Metals", sub: "Critical Metals", price: 9.28, dayChg: 4.39, rating: "Spec", analysts: 35, targetUpside: 25, revGrowth: 0, epsGrowth: 0, catalyst: "Critical metals theme" },
-          { ticker: "USAR", name: "USA Rare Earth", sub: "Rare Earths", price: 18.42, dayChg: 0.38, rating: "Spec", analysts: 30, targetUpside: 20, revGrowth: 0, epsGrowth: 0, catalyst: "Rare earth optionality" },
-          { ticker: "AREC", name: "American Resources", sub: "Critical Materials", price: 2.21, dayChg: -7.74, rating: "Spec", analysts: 25, targetUpside: 20, revGrowth: 0, epsGrowth: 0, catalyst: "Resource recycling and materials theme" },
-          { ticker: "TMC", name: "TMC The Metals Company", sub: "Deep Sea Metals", price: 5.17, dayChg: 0.98, rating: "Spec", analysts: 28, targetUpside: 20, revGrowth: 0, epsGrowth: 0, catalyst: "Seabed metals optionality" },
-          { ticker: "PALL", name: "abrdn Physical Palladium", sub: "ETF", price: 141.58, dayChg: -0.90, rating: "ETF", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Physical palladium exposure" },
-          { ticker: "SBSW", name: "Sibanye Stillwater", sub: "PGMs", price: 13.09, dayChg: -0.76, rating: "Hold", analysts: 48, targetUpside: 15, revGrowth: 5, epsGrowth: 0, catalyst: "PGM and battery metals exposure" },
-          { ticker: "VALE", name: "Vale", sub: "Diversified Mining", price: 17.44, dayChg: -1.02, rating: "Hold", analysts: 54, targetUpside: 10, revGrowth: 6, epsGrowth: 8, catalyst: "Iron ore and energy transition metals" },
-          { ticker: "NB", name: "NioCorp", sub: "Critical Metals", price: 5.89, dayChg: -0.34, rating: "Spec", analysts: 22, targetUpside: 20, revGrowth: 0, epsGrowth: 0, catalyst: "Niobium and critical materials theme" },
-          { ticker: "IPX", name: "IperionX", sub: "Titanium", price: 33.46, dayChg: -0.77, rating: "Buy", analysts: 40, targetUpside: 15, revGrowth: 0, epsGrowth: 0, catalyst: "Titanium and advanced materials" }
-        ]
-      },
-
-      situational: {
-        label: "Situational Awareness LP",
-        icon: "🧠",
-        color: "#5EDFB0",
-        colorDim: "rgba(94,223,176,0.10)",
-        description: "Situational Awareness LP 포트폴리오 및 관련 추적 종목",
-        stocks: [
-          { ticker: "BE", name: "Bloom Energy", sub: "SA Holding", price: 209.97, dayChg: -1.81, rating: "Buy", analysts: 65, targetUpside: 22, revGrowth: 58, epsGrowth: 140, catalyst: "Top SA-themed energy/AI name" },
-          { ticker: "CRWV", name: "CoreWeave", sub: "SA Holding", price: 119.54, dayChg: 0.72, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "SA holding / AI cloud exposure" },
-          { ticker: "INTC", name: "Intel", sub: "SA Holding", price: 68.49, dayChg: 5.47, rating: "Hold", analysts: 55, targetUpside: 12, revGrowth: 5, epsGrowth: 15, catalyst: "SA holding / compute turnaround" },
-          { ticker: "LITE", name: "Lumentum", sub: "SA Holding", price: 890.93, dayChg: 8.12, rating: "Strong Buy", analysts: 85, targetUpside: 15, revGrowth: 77, epsGrowth: 200, catalyst: "SA holding / optical networking" },
-          { ticker: "CORZ", name: "Core Scientific", sub: "SA Holding", price: null, dayChg: null, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "SA holding / compute infra" },
-          { ticker: "CIFR", name: "Cipher Mining", sub: "SA Holding", price: 17.35, dayChg: -3.64, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "SA holding / compute infra" },
-          { ticker: "IREN", name: "IREN", sub: "SA Holding", price: null, dayChg: null, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "SA holding / AI data center" },
-          { ticker: "APLD", name: "Applied Digital", sub: "SA Holding", price: null, dayChg: null, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "SA holding / data center infra" },
-          { ticker: "EQT", name: "EQT Corp", sub: "SA Holding", price: null, dayChg: null, rating: "Buy", analysts: 69, targetUpside: 16, revGrowth: 18, epsGrowth: 35, catalyst: "SA holding / gas and power demand" },
-          { ticker: "COHR", name: "Coherent", sub: "SA Watch", price: 328.01, dayChg: 6.43, rating: "Strong Buy", analysts: 82, targetUpside: 20, revGrowth: 15, epsGrowth: 45, catalyst: "SA-adjacent optical theme" }
-        ]
-      },
-
-      korea: {
-        label: "Korea",
-        icon: "🇰🇷",
-        color: "#60A5FA",
-        colorDim: "rgba(96,165,250,0.10)",
-        description: "이전에 준 한국 종목 + 에너지/원전/우주/광학/자동차",
-        stocks: [
-          { ticker: "047050", name: "포스코인터내셔널", sub: "Korea Energy/Trading", price: 74800, dayChg: 2.75, rating: "Hold", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Previously shared holding" },
-          { ticker: "336260", name: "두산퓨얼셀", sub: "Korea Fuel Cell", price: 46050, dayChg: 0.11, rating: "Hold", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Previously shared holding" },
-          { ticker: "034020", name: "두산에너빌리티", sub: "Korea Nuclear/Power", price: 108500, dayChg: -2.08, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Korea nuclear and power" },
-          { ticker: "105840", name: "우진", sub: "Korea Nuclear", price: 25500, dayChg: 1.59, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Korea nuclear instrumentation" },
-          { ticker: "094820", name: "일진파워", sub: "Korea Nuclear", price: 18230, dayChg: -1.19, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Korea power maintenance" },
-          { ticker: "046120", name: "오르비텍", sub: "Korea Nuclear", price: 11280, dayChg: -2.00, rating: "Spec", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Radiation and nuclear theme" },
-          { ticker: "032820", name: "우리기술", sub: "Korea Nuclear", price: 22550, dayChg: -2.38, rating: "Spec", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Control systems / nuclear theme" },
-          { ticker: "010120", name: "LS ELECTRIC", sub: "Korea Grid", price: 186500, dayChg: -1.11, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Electrification and grid" },
-          { ticker: "307950", name: "현대오토에버", sub: "Korea IT/Auto", price: 432000, dayChg: -1.14, rating: "Hold", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Software and mobility" },
-          { ticker: "005380", name: "현대차", sub: "Korea Auto", price: 538000, dayChg: 0.75, rating: "Hold", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Auto and robotics ecosystem" },
-          { ticker: "000720", name: "현대건설", sub: "Korea Construction", price: 177000, dayChg: -1.39, rating: "Hold", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Infra and plant construction" },
-          { ticker: "042660", name: "한화오션", sub: "Korea Defense/Shipbuilding", price: 130000, dayChg: -1.44, rating: "Buy", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Shipbuilding and defense" },
-          { ticker: "274090", name: "켄코아에어로스페이스", sub: "Korea Aerospace", price: 24000, dayChg: 5.49, rating: "Spec", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Aerospace supply chain" },
-          { ticker: "478340", name: "나라스페이스테크놀로지", sub: "Korea Space", price: 38350, dayChg: 1.99, rating: "Spec", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Space theme" },
-          { ticker: "488900", name: "비츠로넥스텍", sub: "Korea Space/Nuclear", price: 20600, dayChg: 6.63, rating: "Spec", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Aerospace and power theme" },
-          { ticker: "295310", name: "에이치브이엠", sub: "Korea Advanced Materials", price: 99500, dayChg: 10.19, rating: "Spec", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Advanced materials theme" },
-          { ticker: "0015G0", name: "그린광학", sub: "Korea Optics", price: 31550, dayChg: 1.94, rating: "Spec", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Optics and components" },
-          { ticker: "440110", name: "파두", sub: "Korea Semiconductor", price: 59000, dayChg: 2.43, rating: "Spec", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "SSD controller / semiconductor" },
-          { ticker: "090710", name: "휴림로봇", sub: "Korea Robotics", price: 11600, dayChg: 0.52, rating: "Spec", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Robotics theme" },
-          { ticker: "376900", name: "로킷헬스케어", sub: "Korea Healthcare", price: 101900, dayChg: -1.26, rating: "Spec", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Healthcare platform" },
-          { ticker: "127120", name: "제이에스링크", sub: "Korea Industrial", price: 46350, dayChg: -1.70, rating: "Spec", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Industrial theme" },
-          { ticker: "126340", name: "비나텍", sub: "Korea Fuel Cell/Capacitor", price: 124900, dayChg: -1.73, rating: "Spec", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Hydrogen and energy storage" },
-          { ticker: "900290", name: "GRT", sub: "Korea/China Materials", price: 5390, dayChg: -4.77, rating: "Spec", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Materials theme" }
-        ]
-      },
-
-      momentum: {
-        label: "Momentum / ETF",
-        icon: "🚀",
-        color: "#F472B6",
-        colorDim: "rgba(244,114,182,0.10)",
-        description: "레버리지 ETF, 스타일 ETF, 고배당 ETF",
-        stocks: [
-          { ticker: "SOXL", name: "Direxion Daily Semiconductor Bull 3X", sub: "Leveraged ETF", price: 88.43, dayChg: 2.87, rating: "ETF", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "3x semiconductor beta" },
-          { ticker: "TQQQ", name: "ProShares UltraPro QQQ", sub: "Leveraged ETF", price: 56.43, dayChg: 1.40, rating: "ETF", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "3x Nasdaq beta" },
-          { ticker: "QLD", name: "ProShares Ultra QQQ", sub: "Leveraged ETF", price: 74.80, dayChg: 0.93, rating: "ETF", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "2x Nasdaq beta" },
-          { ticker: "SCHD", name: "Schwab US Dividend Equity ETF", sub: "Dividend ETF", price: 30.82, dayChg: 0.55, rating: "ETF", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Dividend quality basket" },
-          { ticker: "JEPQ", name: "JPMorgan Nasdaq Equity Premium Income ETF", sub: "Income ETF", price: 58.53, dayChg: 0.09, rating: "ETF", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Option income on Nasdaq" },
-          { ticker: "JEPI", name: "JPMorgan Equity Premium Income ETF", sub: "Income ETF", price: 57.60, dayChg: -0.02, rating: "ETF", analysts: 0, targetUpside: 0, revGrowth: 0, epsGrowth: 0, catalyst: "Option income broad market" }
-        ]
-      }
-    };
-
-    const SORT_OPTIONS = [
-      { key: "default", label: "Default" },
-      { key: "dayChg", label: "Day %" },
-      { key: "targetUpside", label: "Upside" },
-      { key: "epsGrowth", label: "EPS Grw" },
-      { key: "revGrowth", label: "Rev Grw" },
-      { key: "analysts", label: "Analyst" }
-    ];
-
-    let currentTab = "situational";
-    let currentSort = "default";
-    let currentSearch = "";
-
-    const tabsEl = document.getElementById("tabs");
-    const gridEl = document.getElementById("grid");
-    const statsGridEl = document.getElementById("statsGrid");
-    const searchInputEl = document.getElementById("searchInput");
-    const sortButtonsEl = document.getElementById("sortButtons");
-    const sectorDescEl = document.getElementById("sectorDesc");
-    const subtitleEl = document.getElementById("subtitle");
-    const titleEl = document.getElementById("title");
-    const pulseDotEl = document.getElementById("pulseDot");
-
-    function totalStocks() {
-      return Object.values(SECTORS).reduce((acc, s) => acc + s.stocks.length, 0);
-    }
-
-    function getSector() {
-      return SECTORS[currentTab];
-    }
-
-    function getFilteredStocks() {
-      const sector = getSector();
-      let stocks = [...sector.stocks];
-
-      if (currentSearch) {
-        const q = currentSearch.toLowerCase();
-        stocks = stocks.filter(x =>
-          String(x.ticker).toLowerCase().includes(q) ||
-          x.name.toLowerCase().includes(q) ||
-          x.sub.toLowerCase().includes(q)
-        );
-      }
-
-      if (currentSort !== "default") {
-        stocks.sort((a, b) => {
-          const av = a[currentSort] ?? -999;
-          const bv = b[currentSort] ?? -999;
-          return bv - av;
-        });
-      }
-
-      return stocks;
-    }
-
-    function getBadgeStyle(rating) {
-      const isStrong = String(rating).includes("Strong");
-      const isEtf = rating === "ETF";
-      const isSpec = rating === "Spec";
-      const bg = isEtf
-        ? "rgba(120,120,140,0.15)"
-        : isStrong
-        ? "rgba(0,229,160,0.18)"
-        : isSpec
-        ? "rgba(244,114,182,0.12)"
-        : rating === "Buy"
-        ? "rgba(0,229,160,0.10)"
-        : "rgba(255,200,50,0.10)";
-      const color = isEtf
-        ? "#9CA3AF"
-        : isStrong
-        ? "#00E5A0"
-        : isSpec
-        ? "#F472B6"
-        : rating === "Buy"
-        ? "#5EDFB0"
-        : "#E5C84C";
-
-      return { bg, color };
-    }
-
-    function metricBar(label, value, max, color, suffix = "%") {
-      const n = Number(value || 0);
-      const pct = Math.min(Math.max((n / max) * 100, 0), 100);
-      const display = n > 0 ? `+${n}${suffix}` : "—";
-      const valueColor = n > 0 ? color : "#555";
-
-      return `
-        <div class="metric">
-          <div class="metric-row">
-            <span>${label}</span>
-            <span class="metric-value" style="color:${valueColor}">${display}</span>
+  return (
+    <div>
+      {/* Summary */}
+      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "20px" }}>
+        {Object.entries(MATRIX_ACTIONS).filter(([k])=>grid[k]?.length).map(([k,a])=>(
+          <div key={k} style={{ background: a.bg, border: `1px solid ${a.color}25`, borderRadius: "8px", padding: "8px 14px" }}>
+            <div style={{ fontSize: "11px", color: a.color, fontWeight: 700 }}>{a.label} {a.sub&&<span style={{ fontWeight: 400, opacity: .7 }}>({a.sub})</span>}</div>
+            <div style={{ fontSize: "13px", color: "#D1D5DB", marginTop: "4px" }}>{grid[k].map(s=>s.ticker).join(", ")}</div>
           </div>
-          <div class="metric-track">
-            <div class="metric-fill" style="width:${pct}%; background:linear-gradient(90deg, ${color}66, ${color})"></div>
-          </div>
-        </div>
-      `;
-    }
+        ))}
+      </div>
 
-    function formatPrice(stock) {
-      if (stock.price === null || stock.price === undefined) return "";
-      const isKorea = currentTab === "korea";
-      const n = Number(stock.price);
-      return isKorea ? `₩${n.toLocaleString("ko-KR")}` : `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
+      {/* Y-axis label */}
+      <div style={{ fontSize: "11px", color: "#6B7280", marginBottom: "6px", textAlign: "center" }}>QUALITY (기업 품질) →</div>
 
-    function renderHeader() {
-      const sector = getSector();
-      subtitleEl.textContent = `${totalStocks()} stocks across ${Object.keys(SECTORS).length} sectors`;
-      sectorDescEl.innerHTML = `<span style="color:${sector.color};font-weight:700">${sector.icon} ${sector.label}</span> — ${sector.description}`;
-      titleEl.style.backgroundImage = `linear-gradient(135deg, ${sector.color}, #E5E7EB, ${sector.color})`;
-      pulseDotEl.style.background = sector.color;
-      pulseDotEl.style.boxShadow = `0 0 10px ${sector.color}50`;
-    }
+      {/* 3x3 Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 1fr 1fr", gridTemplateRows: "auto auto auto auto", gap: "2px" }}>
+        {/* Header row */}
+        <div/>
+        {[3,2,1].map(v=><div key={v} style={{ textAlign: "center", padding: "8px", fontSize: "12px", fontWeight: 700, color: v===3?"#00E5A0":v===2?"#a78bfa":"#ef4444" }}>{vLabels[v]}</div>)}
 
-    function renderTabs() {
-      tabsEl.innerHTML = Object.entries(SECTORS).map(([key, sector]) => {
-        const active = key === currentTab;
-        return `
-          <button
-            class="tab-btn"
-            data-tab="${key}"
-            style="
-              border:${active ? `1px solid ${sector.color}40` : "1px solid transparent"};
-              background:${active ? sector.colorDim : "transparent"};
-              color:${active ? sector.color : "#555"};
-              font-weight:${active ? 700 : 500};
-            "
-          >
-            <span style="font-size:14px">${sector.icon}</span>
-            <span>${sector.label}</span>
-            <span class="tab-count" style="background:${active ? sector.color + "20" : "rgba(255,255,255,0.04)"}">${sector.stocks.length}</span>
-          </button>
-        `;
-      }).join("");
-
-      tabsEl.querySelectorAll("[data-tab]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          currentTab = btn.dataset.tab;
-          currentSort = "default";
-          currentSearch = "";
-          searchInputEl.value = "";
-          renderAll();
-        });
-      });
-    }
-
-    function renderSortButtons() {
-      const sector = getSector();
-
-      sortButtonsEl.innerHTML = SORT_OPTIONS.map(opt => {
-        const active = opt.key === currentSort;
-        return `
-          <button
-            class="sort-btn"
-            data-sort="${opt.key}"
-            style="
-              border:${active ? `1px solid ${sector.color}35` : "1px solid rgba(255,255,255,0.05)"};
-              background:${active ? sector.colorDim : "transparent"};
-              color:${active ? sector.color : "#555"};
-            "
-          >
-            ${opt.label}
-          </button>
-        `;
-      }).join("");
-
-      sortButtonsEl.querySelectorAll("[data-sort]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          currentSort = btn.dataset.sort;
-          renderAll();
-        });
-      });
-    }
-
-    function renderStats() {
-      const sector = getSector();
-      const real = sector.stocks.filter(s => s.rating !== "ETF");
-      const withPrice = sector.stocks.filter(s => s.price !== null && s.price !== undefined);
-      const avgUpside = real.length ? Math.round(real.reduce((a, s) => a + Number(s.targetUpside || 0), 0) / real.length) : 0;
-      const avgAnalyst = real.length ? Math.round(real.reduce((a, s) => a + Number(s.analysts || 0), 0) / real.length) : 0;
-      const topGrower = [...real].sort((a, b) => Number(b.revGrowth || 0) - Number(a.revGrowth || 0))[0];
-      const gainers = withPrice.filter(s => Number(s.dayChg) > 0).length;
-      const losers = withPrice.filter(s => Number(s.dayChg) < 0).length;
-
-      const stats = [
-        { label: "Avg Upside", value: `+${avgUpside}%`, sub: "consensus" },
-        { label: "Analyst Score", value: `${avgAnalyst}`, sub: "/ 100" },
-        { label: "Top Rev Grower", value: topGrower ? topGrower.ticker : "—", sub: topGrower ? `+${topGrower.revGrowth}%` : "" }
-      ];
-
-      if (withPrice.length > 0) {
-        stats.push({ label: "Today", value: `${gainers}↑ ${losers}↓`, sub: `of ${withPrice.length}` });
-      }
-
-      statsGridEl.style.gridTemplateColumns = `repeat(${stats.length}, 1fr)`;
-      statsGridEl.innerHTML = stats.map(stat => `
-        <div class="stat-card">
-          <div class="stat-label">${stat.label}</div>
-          <div class="stat-value" style="color:${sector.color}">${stat.value}</div>
-          ${stat.sub ? `<div class="stat-sub">${stat.sub}</div>` : ""}
-        </div>
-      `).join("");
-    }
-
-    function renderGrid() {
-      const sector = getSector();
-      const stocks = getFilteredStocks();
-
-      if (!stocks.length) {
-        gridEl.innerHTML = `<div class="empty">No stocks match "${currentSearch}"</div>`;
-        return;
-      }
-
-      gridEl.innerHTML = stocks.map((stock, idx) => {
-        const badge = getBadgeStyle(stock.rating);
-        const hasPrice = stock.price !== null && stock.price !== undefined;
-        const chg = Number(stock.dayChg || 0);
-
-        return `
-          <div class="card"
-               style="animation-delay:${idx * 0.04}s"
-               onmouseenter="this.style.borderColor='${sector.color}35';this.style.boxShadow='0 8px 24px ${sector.color}10';this.style.background='rgba(255,255,255,0.035)'"
-               onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)';this.style.boxShadow='none';this.style.background='rgba(255,255,255,0.015)'">
-            <div class="card-head">
-              <div>
-                <div class="ticker-row">
-                  <span class="ticker">${stock.ticker}</span>
-                  <span class="badge" style="background:${badge.bg};color:${badge.color};border:1px solid ${badge.color}30">${stock.rating}</span>
-                </div>
-                <div class="company">${stock.name}</div>
-              </div>
-
-              ${hasPrice ? `
-                <div class="price-box">
-                  <div class="price">${formatPrice(stock)}</div>
-                  <div class="daychg" style="color:${chg >= 0 ? "#00E5A0" : "#FF6B6B"}">
-                    ${chg >= 0 ? "▲" : "▼"} ${Math.abs(chg).toFixed(2)}%
+        {/* Grid rows - from top (quality=3) to bottom (quality=1) */}
+        {[3,2,1].map(q=>(
+          <>
+            <div key={`ql-${q}`} style={{ writingMode: "vertical-rl", textOrientation: "mixed", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700, color: q===3?"#00E5A0":q===2?"#f59e0b":"#ef4444", transform: "rotate(180deg)" }}>{qLabels[q]}</div>
+            {[1,2,3].map(v=>{
+              const k=`${q}-${v}`;
+              const a = MATRIX_ACTIONS[k];
+              return (
+                <div key={k} style={{ background: a.bg, border: `1px solid ${a.color}15`, borderRadius: "10px", padding: "10px", minHeight: "90px" }}>
+                  <div style={{ fontSize: "11px", fontWeight: 700, color: a.color, marginBottom: "6px" }}>{a.label}</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                    {grid[k].map(s=>{
+                      const sectorColor = SECTOR_META[s.sector]?.color || "#888";
+                      return (
+                        <div key={s.ticker} style={{ background: "rgba(0,0,0,0.3)", border: `1px solid ${sectorColor}30`, borderRadius: "6px", padding: "4px 8px", fontSize: "12px", fontWeight: 700, color: "#E5E7EB", fontFamily: "monospace", cursor: "default" }} title={`${s.name} — ${s.desc}`}>
+                          <span style={{ color: sectorColor, marginRight: "3px", fontSize: "8px" }}>●</span>{s.ticker}
+                          {s.price>0&&<span style={{ fontSize: "9px", color: s.change>0?"#00E5A0":s.change<0?"#FF6B6B":"#6B7280", marginLeft: "4px" }}>{s.change>0?"+":""}{s.change.toFixed(1)}%</span>}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              ` : ``}
-            </div>
+              );
+            })}
+          </>
+        ))}
+      </div>
 
-            <div class="sub-tag" style="background:${sector.color}12;border:1px solid ${sector.color}25;color:${sector.color}">
-              ${stock.sub}
-            </div>
+      {/* X-axis */}
+      <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 1fr 1fr", marginTop: "4px" }}>
+        <div/>{[1,2,3].map(v=><div key={v} style={{ textAlign: "center", fontSize: "11px", color: "#6B7280" }}>VALUATION {v}</div>)}
+      </div>
 
-            ${stock.rating !== "ETF" ? `
-              ${metricBar("Target Upside", stock.targetUpside || 0, 80, sector.color)}
-              ${metricBar("Rev Growth", stock.revGrowth || 0, 150, "#4ECDC4")}
-              ${metricBar("EPS Growth", Math.min(stock.epsGrowth || 0, 200), 200, "#FFD93D", (stock.epsGrowth || 0) > 200 ? "%+" : "%")}
-
-              <div class="analyst-row">
-                <span class="analyst-label">Analysts</span>
-                <div class="analyst-bars">
-                  ${Array.from({ length: 10 }).map((_, i) => `
-                    <div class="analyst-bar" style="background:${i < Math.round((stock.analysts || 0) / 10) ? sector.color : "rgba(255,255,255,0.04)"}"></div>
-                  `).join("")}
-                </div>
-                <span class="analyst-num" style="color:${sector.color}">${stock.analysts || 0}</span>
-              </div>
-            ` : ``}
-
-            <div class="catalyst" style="border-left:2px solid ${sector.color}35">
-              <span class="catalyst-label" style="color:${sector.color}">${stock.rating === "ETF" ? "ETF" : "Catalyst"}</span>
-              ${stock.catalyst}
-            </div>
+      {/* Legend */}
+      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "20px", justifyContent: "center" }}>
+        {Object.entries(SECTOR_META).filter(([k])=>k!=="matrix").map(([k,m])=>(
+          <div key={k} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#9CA3AF" }}>
+            <span style={{ color: m.color, fontSize: "10px" }}>●</span>{m.icon} {m.label}
           </div>
-        `;
-      }).join("");
-    }
+        ))}
+      </div>
+    </div>
+  );
+}
 
-    function renderAll() {
-      renderHeader();
-      renderTabs();
-      renderSortButtons();
-      renderStats();
-      renderGrid();
-    }
+function Summary({ stocks, color }) {
+  const ne=stocks.filter(x=>x.rating!=="ETF");
+  const wp=stocks.filter(x=>x.price>0);
+  const au=ne.length?Math.round(ne.reduce((a,x)=>a+x.targetUpside,0)/ne.length):0;
+  const ac=wp.length?(wp.reduce((a,x)=>a+x.change,0)/wp.length).toFixed(2):"—";
+  const tg=[...ne].sort((a,b)=>b.revGrowth-a.revGrowth)[0];
+  const nc=stocks.filter(x=>x.isNew).length;
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(100px,1fr))", gap: "1px", background: "rgba(255,255,255,0.035)", borderRadius: "10px", overflow: "hidden", marginBottom: "16px" }}>
+      {[{l:"종목",v:`${stocks.length}`,s:nc>0?`+${nc}`:""},{l:"평균 상승여력",v:`+${au}%`},{l:"오늘 평균",v:`${Number(ac)>0?"+":""}${ac}%`},{l:"Top",v:tg?tg.ticker:"—"}].map((m,i)=>(
+        <div key={i} style={{ background: "#0C0E13", padding: "12px 8px", textAlign: "center" }}>
+          <div style={{ fontSize: "10px", color: "#6B7280", marginBottom: "4px", textTransform: "uppercase", letterSpacing: ".5px" }}>{m.l}</div>
+          <div style={{ fontSize: "18px", fontWeight: 800, color, fontFamily: "monospace" }}>{m.v}</div>
+          {m.s&&<div style={{ fontSize: "9px", color: "#FF6B35", fontWeight: 700 }}>{m.s} new</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
 
-    searchInputEl.addEventListener("input", (e) => {
-      currentSearch = e.target.value.trim().toLowerCase();
-      renderGrid();
-    });
+export default function App() {
+  const [tab, setTab] = useState("nuclear");
+  const [sort, setSort] = useState("default");
+  const [q, setQ] = useState("");
+  const sec = SECTOR_META[tab];
+  const isMatrix = tab === "matrix";
+  const sectorStocks = ALL_STOCKS.filter(s => s.sector === tab);
+  const tot = ALL_STOCKS.length;
+  const tn = ALL_STOCKS.filter(x => x.isNew).length;
 
-    renderAll();
-  </script>
-</body>
-</html>
+  const fs = useMemo(() => {
+    let st = [...sectorStocks];
+    if (q) { const ql=q.toLowerCase(); st=st.filter(s=>s.ticker.toLowerCase().includes(ql)||s.name.toLowerCase().includes(ql)); }
+    if (sort==="change") st.sort((a,b)=>b.change-a.change);
+    else if (sort!=="default") st.sort((a,b)=>b[sort]-a[sort]);
+    return st;
+  }, [tab, sort, q]);
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#080A0F", color: "#E5E7EB", fontFamily: "'Inter',system-ui,sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        @keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes pl{0%,100%{opacity:1}50%{opacity:.35}}
+        @keyframes gl{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        *{box-sizing:border-box;margin:0}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.06);border-radius:2px}
+      `}</style>
+
+      {/* Header */}
+      <div style={{ padding: "24px 20px 14px", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "3px" }}>
+          <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: sec.color, animation: "pl 2s infinite", boxShadow: `0 0 8px ${sec.color}50` }}/>
+          <span style={{ fontSize: "11px", color: "#6B7280", textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 600 }}>Market Intelligence</span>
+        </div>
+        <h1 style={{ fontSize: "24px", fontWeight: 800, margin: "5px 0 3px", background: `linear-gradient(135deg,${sec.color},#fff,${sec.color})`, backgroundSize: "200% 200%", animation: "gl 4s ease infinite", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>AI 섹터 종합 대시보드</h1>
+        <p style={{ fontSize: "13px", color: "#6B7280" }}>총 {tot}종목 · 6개 탭 · <span style={{ color: "#FF6B35" }}>+{tn} 신규</span> · 2026.04.18</p>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: "3px", padding: "10px 20px", overflowX: "auto", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
+        {Object.entries(SECTOR_META).map(([k,s])=>{
+          const a=k===tab; const cnt=k==="matrix"?ALL_STOCKS.filter(x=>x.quality>0).length:ALL_STOCKS.filter(x=>x.sector===k).length;
+          return <button key={k} onClick={()=>{setTab(k);setSort("default");setQ("");}}
+            style={{ display: "flex", alignItems: "center", gap: "5px", padding: "8px 14px", borderRadius: "9px", border: a?`1px solid ${s.color}40`:"1px solid transparent", background: a?s.colorDim:"transparent", color: a?s.color:"#6B7280", fontSize: "13px", fontWeight: a?700:500, cursor: "pointer", whiteSpace: "nowrap", outline: "none", transition: "all .2s" }}>
+            <span style={{ fontSize: "15px" }}>{s.icon}</span>{s.label}
+            <span style={{ fontSize: "11px", fontWeight: 700, padding: "1px 6px", borderRadius: "5px", background: a?s.color+"20":"rgba(255,255,255,.04)", fontFamily: "monospace" }}>{cnt}</span>
+          </button>;
+        })}
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: "14px 20px" }}>
+        <p style={{ fontSize: "14px", color: "#9CA3AF", marginBottom: "12px" }}>
+          <span style={{ color: sec.color, fontWeight: 700 }}>{sec.icon} {sec.label}</span> — {sec.desc}
+        </p>
+
+        {isMatrix ? (
+          <MatrixView />
+        ) : (
+          <>
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "16px" }}>
+              <div style={{ flex: "1 1 160px", position: "relative" }}>
+                <input type="text" placeholder="검색..." value={q} onChange={e=>setQ(e.target.value)}
+                  style={{ width: "100%", padding: "8px 10px 8px 30px", borderRadius: "8px", border: "1px solid rgba(255,255,255,.07)", background: "rgba(255,255,255,.025)", color: "#E5E7EB", fontSize: "13px", outline: "none" }}/>
+                <span style={{ position: "absolute", left: "9px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", opacity: .3 }}>🔍</span>
+              </div>
+              <div style={{ display: "flex", gap: "3px", flexWrap: "wrap" }}>
+                {SORT_OPTIONS.map(o=><button key={o.key} onClick={()=>setSort(o.key)}
+                  style={{ padding: "7px 12px", borderRadius: "7px", border: sort===o.key?`1px solid ${sec.color}30`:"1px solid rgba(255,255,255,.05)", background: sort===o.key?sec.colorDim:"transparent", color: sort===o.key?sec.color:"#6B7280", fontSize: "12px", fontWeight: 600, cursor: "pointer", outline: "none" }}>{o.label}</button>)}
+              </div>
+            </div>
+            <Summary stocks={fs} color={sec.color}/>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(340px,1fr))", gap: "12px" }}>
+              {fs.map((s,i)=><Card key={s.ticker} s={s} sc={sec.color} i={i}/>)}
+              {!fs.length&&<div style={{ gridColumn: "1/-1", textAlign: "center", padding: "40px", color: "#6B7280", fontSize: "14px" }}>검색 결과 없음</div>}
+            </div>
+          </>
+        )}
+      </div>
+
+      <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,.03)", textAlign: "center", fontSize: "10px", color: "#4B5563" }}>
+        2026년 4월 기준 · 투자 조언 아님 · 컨센서스 기반
+      </div>
+    </div>
+  );
+}
