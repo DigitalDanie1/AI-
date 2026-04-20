@@ -14,75 +14,69 @@
       font-family: Inter, system-ui, sans-serif;
       min-height: 100vh;
     }
+
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 999px; }
 
-    @keyframes fadeIn {
+    @keyframes fi {
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: .4; }
+    @keyframes pl {
+      0%,100% { opacity: 1; }
+      50% { opacity: .35; }
     }
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
 
     .spinner {
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(255,255,255,.12);
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,.1);
       border-top-color: #00E5FF;
       border-radius: 50%;
-      animation: spin .7s linear infinite;
+      animation: spin .6s linear infinite;
       display: inline-block;
     }
 
-    .container {
-      width: 100%;
+    .wrap {
       max-width: 1480px;
       margin: 0 auto;
     }
 
-    .section {
-      padding: 14px 20px;
-    }
-
-    .card {
-      background: rgba(255,255,255,.02);
-      border: 1px solid rgba(255,255,255,.06);
-      border-radius: 16px;
-      transition: .2s ease;
-      animation: fadeIn .25s ease both;
-    }
-
-    .card:hover {
-      border-color: rgba(255,255,255,.12);
-      transform: translateY(-1px);
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 700;
-      border: 1px solid rgba(255,255,255,.06);
-      background: rgba(255,255,255,.03);
+    .pill-btn {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04);
       color: #9CA3AF;
+      font-size: 12px;
+      font-weight: 600;
       cursor: pointer;
       outline: none;
     }
 
+    .pill-btn:hover {
+      border-color: rgba(255,255,255,.14);
+    }
+
     .muted { color: #9CA3AF; }
     .subtle { color: #6B7280; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
 
     @media (max-width: 900px) {
-      .section { padding: 12px 14px; }
+      .header-main {
+        padding: 16px 14px 12px !important;
+      }
+      .section {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+      }
+      .tabs-wrap {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+      }
     }
   </style>
 </head>
@@ -96,53 +90,75 @@
   <script type="text/babel">
     const { useState, useMemo, useEffect, useCallback, useRef } = React;
 
-    const parseMcap = (s) => {
+    function parseMcap(s) {
       if (!s) return 0;
       const n = parseFloat(String(s).replace(/[^0-9.]/g, '')) || 0;
       if (String(s).includes('T')) return n * 1000;
       if (String(s).includes('B')) return n;
       if (String(s).includes('M')) return n / 1000;
       return n;
-    };
+    }
 
-    const initStocks = [
-      { t:'CEG', n:'Constellation Energy', sec:'nuclear', sub:'Nuclear Power', p:299.13, ch:1.49, r:'Buy', an:72, tu:12, rg:8, eg:13, mc:'101.9B', cat:'TMI restart, hyperscaler power tie-in', q:3, v:1, desc:'Large-scale regulated and merchant nuclear exposure with direct relevance to AI data-center power demand.', rsi:58, ytd:22, vn:'Stable incumbent nuclear beneficiary with direct data-center demand narrative.', hi:432.78, lo:138, avg:264.95, f:[6,5,9,7,6,8], nw:false },
-      { t:'CCJ', n:'Cameco Corp', sec:'nuclear', sub:'Uranium Mining', p:120.25, ch:0.96, r:'Buy', an:74, tu:25, rg:30, eg:55, mc:'52.8B', cat:'Fuel cycle leverage, Westinghouse exposure', q:3, v:2, desc:'Leading uranium and fuel-cycle exposure with leverage to long-duration nuclear restocking.', rsi:55, ytd:35, vn:'One of the cleaner ways to express nuclear fuel demand.', hi:180, lo:75, avg:150, f:[7,6,8,7,7,8], nw:false },
-      { t:'OKLO', n:'Oklo Inc', sec:'nuclear', sub:'Advanced Nuclear', p:64.2, ch:1.34, r:'Buy', an:70, tu:80, rg:0, eg:0, mc:'16.2B', cat:'SMR optionality, speculative licensing curve', q:2, v:2, desc:'High-beta advanced reactor optionality with strong narrative but early commercial maturity.', rsi:48, ytd:-15, vn:'Very thematic, but execution and timing risk remain high.', hi:120, lo:30, avg:90, f:[9,3,4,6,9,7], nw:false },
-      { t:'LEU', n:'Centrus Energy', sec:'nuclear', sub:'Enrichment', p:202.16, ch:2.21, r:'Buy', an:65, tu:30, rg:15, eg:25, mc:'3.2B', cat:'HALEU scarcity, strategic fuel position', q:3, v:2, desc:'Niche enrichment and HALEU exposure with strategic upside if advanced nuclear scales.', rsi:52, ytd:-8, vn:'More bottleneck exposure than pure generation exposure.', hi:350, lo:100, avg:265, f:[9,4,3,5,8,7], nw:true },
+    const initS = [
+      { t:'CEG', n:'Constellation Energy', sec:'nuclear', sub:'Nuclear Power', p:299.13, ch:1.49, r:'Buy', an:72, tu:12, rg:8, eg:13, mc:'101.9B', cat:'TMI restart, hyperscaler power angle', q:3, v:1, desc:'Large-scale nuclear generation exposure tied to AI electricity demand.', rsi:58, ytd:22, vn:'Incumbent nuclear utility with direct AI power relevance.', hi:432.78, lo:138, avg:264.95, f:[6,5,9,7,6,8], nw:false },
+      { t:'CCJ', n:'Cameco Corp', sec:'nuclear', sub:'Uranium Mining', p:120.25, ch:0.96, r:'Buy', an:74, tu:25, rg:30, eg:55, mc:'52.8B', cat:'Fuel cycle leverage, Westinghouse angle', q:3, v:2, desc:'Leading uranium and fuel-cycle name with leverage to nuclear restocking.', rsi:55, ytd:35, vn:'Clean liquid expression of uranium demand.', hi:180, lo:75, avg:150, f:[7,6,8,7,7,8], nw:false },
+      { t:'OKLO', n:'Oklo Inc', sec:'nuclear', sub:'Advanced Nuclear', p:64.20, ch:1.34, r:'Buy', an:70, tu:80, rg:0, eg:0, mc:'16.2B', cat:'SMR optionality, licensing curve', q:2, v:2, desc:'High-beta advanced reactor optionality with strong narrative and execution risk.', rsi:48, ytd:-15, vn:'Very thematic but early-stage.', hi:120, lo:30, avg:90, f:[9,3,4,6,9,7], nw:false },
+      { t:'LEU', n:'Centrus Energy', sec:'nuclear', sub:'Enrichment', p:202.16, ch:2.21, r:'Buy', an:65, tu:30, rg:15, eg:25, mc:'3.2B', cat:'HALEU scarcity, strategic bottleneck', q:3, v:2, desc:'Strategic enrichment and HALEU exposure for next-gen nuclear supply chain.', rsi:52, ytd:-8, vn:'More bottleneck than generation exposure.', hi:350, lo:100, avg:265, f:[9,4,3,5,8,7], nw:true },
+      { t:'UEC', n:'Uranium Energy', sec:'nuclear', sub:'Mining', p:15.13, ch:2.09, r:'Buy', an:68, tu:35, rg:120, eg:0, mc:'6.1B', cat:'ISR uranium torque', q:2, v:3, desc:'Higher-beta uranium mining name with operating leverage to spot sentiment.', rsi:62, ytd:45, vn:'Good torque when uranium sentiment accelerates.', hi:22, lo:8, avg:17, f:[8,5,4,6,8,7], nw:true },
+      { t:'SMR', n:'NuScale Power', sec:'nuclear', sub:'SMR', p:11.41, ch:-2.56, r:'Hold', an:50, tu:80, rg:325, eg:0, mc:'3.7B', cat:'NRC and commercialization curve', q:2, v:3, desc:'Commercial SMR platform with large optionality and meaningful execution risk.', rsi:38, ytd:-55, vn:'Narrative-rich, cash-flow-poor today.', hi:41, lo:8, avg:20.5, f:[10,2,3,4,9,6], nw:true },
+      { t:'NNE', n:'Nano Nuclear', sec:'nuclear', sub:'Micro Nuclear', p:24.58, ch:1.19, r:'Buy', an:60, tu:45, rg:0, eg:0, mc:'1.8B', cat:'ZEUS / ODIN optionality', q:1, v:2, desc:'Highly speculative micro-reactor optionality with narrative beta.', rsi:44, ytd:-32, vn:'Tiny cap with outsized story sensitivity.', hi:55, lo:12, avg:35, f:[10,2,2,5,9,6], nw:true },
+      { t:'DNN', n:'Denison Mines', sec:'nuclear', sub:'Mining', p:3.93, ch:1.29, r:'Buy', an:62, tu:40, rg:0, eg:0, mc:'3.5B', cat:'Athabasca optionality', q:2, v:3, desc:'Uranium development and optionality play with torque to project de-risking.', rsi:56, ytd:38, vn:'Useful smaller-cap uranium beta.', hi:5.5, lo:1.5, avg:4.2, f:[8,5,3,6,8,7], nw:true },
+      { t:'UUUU', n:'Energy Fuels', sec:'nuclear', sub:'Uranium / REE', p:20.91, ch:-0.43, r:'Buy', an:64, tu:35, rg:45, eg:80, mc:'3.4B', cat:'Uranium plus REE angle', q:2, v:3, desc:'Dual exposure to uranium and rare earth strategic themes.', rsi:61, ytd:52, vn:'Interesting cross-theme materials plus uranium story.', hi:30, lo:8, avg:22, f:[8,5,3,6,8,7], nw:true },
+      { t:'URA', n:'Global X Uranium ETF', sec:'nuclear', sub:'ETF', p:55.27, ch:0.78, r:'ETF', an:0, tu:0, rg:0, eg:0, mc:'4.2B', cat:'Diversified uranium basket', q:0, v:0, desc:'Basket exposure across uranium and nuclear equities.', rsi:54, ytd:30, vn:'Good when single-name risk is unattractive.', hi:0, lo:0, avg:0, f:[6,5,5,6,6,7], nw:true },
+      { t:'URNM', n:'Sprott Uranium Miners ETF', sec:'nuclear', sub:'ETF', p:69.42, ch:0.76, r:'ETF', an:0, tu:0, rg:0, eg:0, mc:'2.1B', cat:'Uranium miners basket', q:0, v:0, desc:'Mining-heavy uranium ETF exposure.', rsi:55, ytd:32, vn:'Cleaner miners basket for uranium beta.', hi:0, lo:0, avg:0, f:[7,5,4,6,7,7], nw:true },
 
-      { t:'GEV', n:'GE Vernova', sec:'power', sub:'Gas Turbines', p:978.15, ch:-0.79, r:'Buy', an:78, tu:18, rg:14, eg:82, mc:'268B', cat:'Grid and turbine scarcity', q:3, v:1, desc:'Power equipment and gas turbine leverage as AI drives accelerated electricity demand.', rsi:72, ytd:65, vn:'One of the cleanest picks-and-shovels for power demand expansion.', hi:1200, lo:600, avg:950, f:[6,6,9,8,5,9], nw:false },
-      { t:'BE', n:'Bloom Energy', sec:'power', sub:'Fuel Cells', p:209.97, ch:-1.81, r:'Buy', an:65, tu:22, rg:58, eg:140, mc:'47.5B', cat:'On-site power for constrained grids', q:3, v:1, desc:'On-site solid oxide power story with strong relevance to behind-the-meter AI load growth.', rsi:68, ytd:180, vn:'Narrative is strong when grid bottlenecks dominate the conversation.', hi:300, lo:100, avg:265, f:[8,4,6,9,8,8], nw:false },
-      { t:'WULF', n:'TeraWulf', sec:'power', sub:'AI Data Center', p:19.31, ch:-1.86, r:'Buy', an:65, tu:45, rg:200, eg:0, mc:'6.8B', cat:'High-beta AI power and hosting angle', q:2, v:2, desc:'Speculative AI hosting and power adjacency with very high narrative torque.', rsi:58, ytd:755, vn:'Power + compute narrative makes it explosive but fragile.', hi:28, lo:8, avg:22, f:[9,3,3,8,9,7], nw:true },
-      { t:'NBIS', n:'Nebius Group', sec:'power', sub:'GPU Cloud', p:165.26, ch:-0.91, r:'Buy', an:70, tu:45, rg:830, eg:0, mc:'37.5B', cat:'Explosive cloud growth', q:3, v:2, desc:'High-growth GPU cloud exposure tied to AI infrastructure demand acceleration.', rsi:64, ytd:320, vn:'A growth-heavy AI demand proxy with momentum sensitivity.', hi:250, lo:50, avg:200, f:[9,3,5,9,9,8], nw:false },
+      { t:'GEV', n:'GE Vernova', sec:'power', sub:'Gas Turbines', p:978.15, ch:-0.79, r:'Buy', an:78, tu:18, rg:14, eg:82, mc:'268B', cat:'Grid and turbine scarcity', q:3, v:1, desc:'Power equipment and turbine scarcity beneficiary as AI load grows.', rsi:72, ytd:65, vn:'One of the cleanest AI power buildout picks.', hi:1200, lo:600, avg:950, f:[6,6,9,8,5,9], nw:false },
+      { t:'BE', n:'Bloom Energy', sec:'power', sub:'Fuel Cells', p:209.97, ch:-1.81, r:'Buy', an:65, tu:22, rg:58, eg:140, mc:'47.5B', cat:'On-site power for constrained grids', q:3, v:1, desc:'Behind-the-meter solid oxide power story tied to data-center demand.', rsi:68, ytd:180, vn:'Narrative strengthens when the grid is the bottleneck.', hi:300, lo:100, avg:265, f:[8,4,6,9,8,8], nw:false },
+      { t:'WULF', n:'TeraWulf', sec:'power', sub:'AI Data Center', p:19.31, ch:-1.86, r:'Buy', an:65, tu:45, rg:200, eg:0, mc:'6.8B', cat:'High-beta AI hosting angle', q:2, v:2, desc:'Power + compute hosting concept with very high narrative torque.', rsi:58, ytd:755, vn:'Explosive but fragile.', hi:28, lo:8, avg:22, f:[9,3,3,8,9,7], nw:true },
+      { t:'NBIS', n:'Nebius Group', sec:'power', sub:'GPU Cloud', p:165.26, ch:-0.91, r:'Buy', an:70, tu:45, rg:830, eg:0, mc:'37.5B', cat:'Explosive GPU cloud growth', q:3, v:2, desc:'High-growth GPU cloud exposure tied to AI infrastructure demand.', rsi:64, ytd:320, vn:'A growth-heavy AI demand proxy.', hi:250, lo:50, avg:200, f:[9,3,5,9,9,8], nw:false },
+      { t:'APD', n:'Air Products', sec:'power', sub:'Industrial Gas', p:297.26, ch:0.69, r:'Hold', an:58, tu:8, rg:5, eg:8, mc:'66B', cat:'Industrial gas and hydrogen optionality', q:2, v:2, desc:'Lower-beta industrial gas exposure with some data-center adjacency.', rsi:47, ytd:5, vn:'Defensive relative to pure AI names.', hi:340, lo:250, avg:310, f:[3,7,8,4,3,5], nw:true },
+      { t:'LIN', n:'Linde PLC', sec:'power', sub:'Industrial Gas', p:499.08, ch:0.23, r:'Buy', an:72, tu:10, rg:6, eg:12, mc:'238B', cat:'Scaled industrial gas leader', q:3, v:1, desc:'Quality industrial gas leader with broad infrastructure relevance.', rsi:50, ytd:8, vn:'Steadier quality compounder in the theme.', hi:560, lo:420, avg:530, f:[2,7,9,5,2,6], nw:true },
 
-      { t:'LITE', n:'Lumentum', sec:'photonics', sub:'Lasers', p:82.7, ch:0.0, r:'Strong Buy', an:85, tu:15, rg:77, eg:6700, mc:'54B', cat:'Optics demand inflection', q:3, v:1, desc:'Photonics and optics leverage to AI interconnect density and bandwidth upgrades.', rsi:74, ytd:95, vn:'Very sensitive to AI optical capex cycle expectations.', hi:100, lo:40, avg:75, f:[8,4,7,9,8,9], nw:false },
-      { t:'COHR', n:'Coherent', sec:'photonics', sub:'Modules', p:79.8, ch:1.25, r:'Strong Buy', an:82, tu:20, rg:15, eg:45, mc:'25B', cat:'Optical packaging and modules', q:3, v:2, desc:'Broad optical and module exposure with AI network capex tailwinds.', rsi:66, ytd:93, vn:'Good blend of thematic relevance and somewhat broader industrial base.', hi:95, lo:35, avg:68, f:[7,5,6,8,7,9], nw:false },
-      { t:'AAOI', n:'Applied Optoelectronics', sec:'photonics', sub:'Transceivers', p:42.1, ch:2.2, r:'Buy', an:60, tu:35, rg:40, eg:120, mc:'4B', cat:'400G/800G transceiver torque', q:2, v:3, desc:'High-beta transceiver story with substantial upside to AI networking demand but more execution risk.', rsi:59, ytd:42, vn:'Good tactical name when optics leadership broadens.', hi:60, lo:12, avg:33, f:[9,4,3,8,9,7], nw:false },
+      { t:'LITE', n:'Lumentum', sec:'photonics', sub:'Lasers', p:82.70, ch:0.00, r:'Strong Buy', an:85, tu:15, rg:77, eg:6700, mc:'54B', cat:'Optics demand inflection', q:3, v:1, desc:'Photonics leverage to AI interconnect and bandwidth density.', rsi:74, ytd:95, vn:'Very sensitive to AI optical capex expectations.', hi:100, lo:40, avg:75, f:[8,4,7,9,8,9], nw:false },
+      { t:'COHR', n:'Coherent', sec:'photonics', sub:'Modules', p:79.80, ch:1.25, r:'Strong Buy', an:82, tu:20, rg:15, eg:45, mc:'25B', cat:'Optical packaging and modules', q:3, v:2, desc:'Broad optical platform with AI network capex tailwinds.', rsi:66, ytd:93, vn:'Good mix of thematic exposure and operating breadth.', hi:95, lo:35, avg:68, f:[7,5,6,8,7,9], nw:false },
+      { t:'MRVL', n:'Marvell', sec:'photonics', sub:'Custom Silicon', p:94.60, ch:0.84, r:'Buy', an:78, tu:22, rg:25, eg:40, mc:'95B', cat:'Custom silicon and optical adjacency', q:3, v:2, desc:'Custom AI silicon and networking beneficiary across scale-out infrastructure.', rsi:52, ytd:15, vn:'Second-order AI infra winner with broad relevance.', hi:120, lo:50, avg:85, f:[7,5,8,7,7,8], nw:false },
+      { t:'FN', n:'Fabrinet', sec:'photonics', sub:'Manufacturing', p:242.20, ch:0.40, r:'Buy', an:72, tu:18, rg:20, eg:25, mc:'16B', cat:'Optical manufacturing partner', q:2, v:2, desc:'Manufacturing leverage to optical content growth.', rsi:50, ytd:18, vn:'Useful picks-and-shovels photonics exposure.', hi:280, lo:120, avg:220, f:[6,6,5,7,6,7], nw:false },
+      { t:'MTSI', n:'MACOM', sec:'photonics', sub:'Analog', p:126.20, ch:0.55, r:'Buy', an:70, tu:28, rg:22, eg:35, mc:'17B', cat:'Analog and telecom AI linkage', q:2, v:2, desc:'Analog and optical exposure benefitting from bandwidth upgrades.', rsi:63, ytd:39, vn:'Good tactical name in broader optical upcycles.', hi:140, lo:60, avg:110, f:[7,5,5,8,7,8], nw:false },
+      { t:'MKSI', n:'MKS Instruments', sec:'photonics', sub:'Equipment', p:131.10, ch:-0.22, r:'Buy', an:68, tu:15, rg:12, eg:24, mc:'17B', cat:'Semi and photonics equipment', q:2, v:2, desc:'Equipment supplier with some photonics and semi process exposure.', rsi:48, ytd:10, vn:'Less pure-play but still cycle-relevant.', hi:155, lo:80, avg:125, f:[6,6,5,6,6,7], nw:false },
+      { t:'IPGP', n:'IPG Photonics', sec:'photonics', sub:'Lasers', p:91.30, ch:0.31, r:'Buy', an:62, tu:30, rg:10, eg:18, mc:'6B', cat:'Laser platform with industrial crossover', q:2, v:3, desc:'Laser exposure with AI adjacency and industrial cycle crossover.', rsi:56, ytd:59, vn:'More mixed demand picture than pure AI optics.', hi:120, lo:55, avg:88, f:[7,5,4,7,7,6], nw:false },
+      { t:'AAOI', n:'Applied Optoelectronics', sec:'photonics', sub:'Transceivers', p:42.10, ch:2.20, r:'Buy', an:60, tu:35, rg:40, eg:120, mc:'4B', cat:'400G/800G transceiver torque', q:2, v:3, desc:'High-beta transceiver name leveraged to AI networking demand.', rsi:59, ytd:42, vn:'Good tactical upside, higher execution risk.', hi:60, lo:12, avg:33, f:[9,4,3,8,9,7], nw:false },
 
-      { t:'NVDA', n:'NVIDIA', sec:'infra', sub:'GPU', p:199.81, ch:0.0, r:'Strong Buy', an:92, tu:15, rg:55, eg:60, mc:'4870B', cat:'AI compute anchor', q:3, v:1, desc:'Core AI compute leader and benchmark name for the entire AI infrastructure stack.', rsi:56, ytd:12, vn:'The reference asset for AI compute capex and ecosystem sentiment.', hi:250, lo:130, avg:210, f:[7,5,10,8,7,10], nw:false },
-      { t:'ORCL', n:'Oracle', sec:'infra', sub:'Cloud', p:178.36, ch:5.04, r:'Buy', an:75, tu:20, rg:15, eg:22, mc:'498B', cat:'Cloud + AI capacity buildout', q:3, v:2, desc:'Cloud and enterprise infrastructure exposure with AI capacity expansion angle.', rsi:42, ytd:-18, vn:'A steadier AI infra expression than pure hardware names.', hi:350, lo:140, avg:250, f:[7,5,9,7,6,8], nw:true },
-      { t:'AVGO', n:'Broadcom', sec:'infra', sub:'Networking', p:402.47, ch:0.0, r:'Strong Buy', an:88, tu:18, rg:22, eg:30, mc:'934B', cat:'Networking and custom silicon', q:3, v:2, desc:'Critical connectivity and custom silicon player in AI infrastructure scale-out.', rsi:62, ytd:28, vn:'A strong second-order winner from AI cluster buildouts.', hi:500, lo:200, avg:420, f:[6,6,9,8,6,9], nw:false },
-      { t:'VRT', n:'Vertiv', sec:'infra', sub:'Cooling', p:114.4, ch:1.9, r:'Buy', an:80, tu:25, rg:34, eg:47, mc:'72B', cat:'Data-center thermal bottleneck', q:3, v:2, desc:'Cooling and power management bottleneck beneficiary for AI data centers.', rsi:58, ytd:22, vn:'Useful picks-and-shovels exposure when thermal constraints matter.', hi:140, lo:45, avg:100, f:[7,5,7,8,7,9], nw:false },
+      { t:'NVDA', n:'NVIDIA', sec:'infra', sub:'GPU', p:199.81, ch:0.00, r:'Strong Buy', an:92, tu:15, rg:55, eg:60, mc:'4870B', cat:'AI compute anchor', q:3, v:1, desc:'Core AI compute leader and ecosystem benchmark.', rsi:56, ytd:12, vn:'Reference asset for AI compute capex.', hi:250, lo:130, avg:210, f:[7,5,10,8,7,10], nw:false },
+      { t:'INTC', n:'Intel', sec:'infra', sub:'CPU', p:68.49, ch:5.47, r:'Hold', an:55, tu:12, rg:8, eg:45, mc:'296B', cat:'18A and turnaround angle', q:2, v:2, desc:'Turnaround and foundry optionality with renewed AI relevance.', rsi:71, ytd:120, vn:'Momentum strong, execution still debated.', hi:85, lo:25, avg:55, f:[7,7,9,7,6,6], nw:true },
+      { t:'ORCL', n:'Oracle', sec:'infra', sub:'Cloud', p:178.36, ch:5.04, r:'Buy', an:75, tu:20, rg:15, eg:22, mc:'498B', cat:'Cloud + AI capacity buildout', q:3, v:2, desc:'Cloud capacity and enterprise AI infrastructure beneficiary.', rsi:42, ytd:-18, vn:'Steadier AI infra expression than pure hardware.', hi:350, lo:140, avg:250, f:[7,5,9,7,6,8], nw:true },
+      { t:'AVGO', n:'Broadcom', sec:'infra', sub:'Networking', p:402.47, ch:0.00, r:'Strong Buy', an:88, tu:18, rg:22, eg:30, mc:'934B', cat:'Networking and custom silicon', q:3, v:2, desc:'Critical connectivity and custom AI silicon exposure.', rsi:62, ytd:28, vn:'Major second-order AI infra winner.', hi:500, lo:200, avg:420, f:[6,6,9,8,6,9], nw:false },
+      { t:'VRT', n:'Vertiv', sec:'infra', sub:'Cooling', p:114.40, ch:1.90, r:'Buy', an:80, tu:25, rg:34, eg:47, mc:'72B', cat:'Thermal bottleneck beneficiary', q:3, v:2, desc:'Cooling and power management beneficiary for AI data centers.', rsi:58, ytd:22, vn:'Useful picks-and-shovels exposure when thermal bottlenecks dominate.', hi:140, lo:45, avg:100, f:[7,5,7,8,7,9], nw:false },
+      { t:'APH', n:'Amphenol', sec:'infra', sub:'Connectors', p:145.80, ch:0.34, r:'Buy', an:76, tu:16, rg:20, eg:28, mc:'110B', cat:'High-quality connector exposure', q:3, v:1, desc:'Connector and interconnect supplier leveraged to data-center density.', rsi:54, ytd:15, vn:'Quality compounder inside the infra basket.', hi:165, lo:90, avg:135, f:[4,6,8,7,4,8], nw:false },
+      { t:'DELL', n:'Dell Technologies', sec:'infra', sub:'Servers', p:139.20, ch:0.58, r:'Buy', an:74, tu:20, rg:19, eg:27, mc:'100B', cat:'AI server buildout', q:2, v:2, desc:'Server and enterprise infrastructure beneficiary of AI deployment.', rsi:50, ytd:10, vn:'Useful server exposure with enterprise demand sensitivity.', hi:170, lo:70, avg:128, f:[6,7,8,7,6,8], nw:false },
+      { t:'CRDO', n:'Credo Technology', sec:'infra', sub:'Cables', p:88.40, ch:1.76, r:'Buy', an:72, tu:30, rg:200, eg:300, mc:'18B', cat:'AEC and scale-out connectivity', q:3, v:2, desc:'Connectivity and AEC beneficiary in scale-out AI networking.', rsi:65, ytd:85, vn:'One of the purer scale-out networking trades.', hi:110, lo:28, avg:70, f:[9,3,4,9,9,8], nw:false },
+      { t:'EME', n:'EMCOR', sec:'infra', sub:'Construction', p:412.70, ch:0.42, r:'Buy', an:68, tu:15, rg:18, eg:22, mc:'28B', cat:'Data-center build contractor', q:2, v:2, desc:'Construction and electrical infrastructure leverage to data-center capex.', rsi:52, ytd:18, vn:'Less flashy but useful physical buildout exposure.', hi:480, lo:180, avg:360, f:[5,6,6,7,5,7], nw:false },
 
-      { t:'FCX', n:'Freeport-McMoRan', sec:'materials', sub:'Copper', p:68.28, ch:-0.61, r:'Buy', an:74, tu:18, rg:12, eg:25, mc:'97B', cat:'Copper electrification leverage', q:3, v:2, desc:'Copper exposure tied to electrification, grid expansion, and AI-capex-induced power buildout.', rsi:60, ytd:30, vn:'Materials angle with broad infrastructure relevance.', hi:85, lo:40, avg:70, f:[7,6,8,6,7,7], nw:true },
-      { t:'SCCO', n:'Southern Copper', sec:'materials', sub:'Copper', p:188.24, ch:-0.56, r:'Buy', an:65, tu:12, rg:10, eg:18, mc:'145B', cat:'Copper torque with quality bias', q:3, v:1, desc:'Higher-quality copper exposure with a steadier risk profile than smaller miners.', rsi:48, ytd:15, vn:'Cleaner but less explosive materials proxy.', hi:230, lo:100, avg:195, f:[5,6,8,5,5,6], nw:true },
-      { t:'LAC', n:'Lithium Americas', sec:'materials', sub:'Lithium', p:4.87, ch:6.8, r:'Buy', an:60, tu:55, rg:0, eg:0, mc:'1.1B', cat:'Speculative lithium optionality', q:1, v:3, desc:'Speculative materials optionality with higher project and commodity-cycle risk.', rsi:42, ytd:-28, vn:'High optionality, low certainty.', hi:10, lo:2.5, avg:7, f:[10,3,2,5,9,6], nw:true },
-
-      { t:'URA', n:'Global X Uranium ETF', sec:'nuclear', sub:'ETF', p:55.27, ch:0.78, r:'ETF', an:0, tu:0, rg:0, eg:0, mc:'4.2B', cat:'Basket exposure', q:0, v:0, desc:'Diversified ETF exposure across uranium and nuclear equities.', rsi:54, ytd:30, vn:'Useful when stock-specific risk is less attractive.', hi:0, lo:0, avg:0, f:[6,5,5,6,6,7], nw:true }
+      { t:'FCX', n:'Freeport-McMoRan', sec:'materials', sub:'Copper', p:68.28, ch:-0.61, r:'Buy', an:74, tu:18, rg:12, eg:25, mc:'97B', cat:'Copper electrification leverage', q:3, v:2, desc:'Copper exposure tied to electrification, grid, and power buildout.', rsi:60, ytd:30, vn:'Broad infrastructure relevance through copper.', hi:85, lo:40, avg:70, f:[7,6,8,6,7,7], nw:true },
+      { t:'SCCO', n:'Southern Copper', sec:'materials', sub:'Copper', p:188.24, ch:-0.56, r:'Buy', an:65, tu:12, rg:10, eg:18, mc:'145B', cat:'Copper torque with quality tilt', q:3, v:1, desc:'Higher-quality copper name with steadier profile than smaller miners.', rsi:48, ytd:15, vn:'Cleaner but less explosive.', hi:230, lo:100, avg:195, f:[5,6,8,5,5,6], nw:true },
+      { t:'LAC', n:'Lithium Americas', sec:'materials', sub:'Lithium', p:4.87, ch:6.80, r:'Buy', an:60, tu:55, rg:0, eg:0, mc:'1.1B', cat:'Thacker Pass optionality', q:1, v:3, desc:'Speculative lithium optionality with project risk.', rsi:42, ytd:-28, vn:'High optionality, low certainty.', hi:10, lo:2.5, avg:7, f:[10,3,2,5,9,6], nw:true },
+      { t:'BHP', n:'BHP Group', sec:'materials', sub:'Diversified', p:79.47, ch:-0.01, r:'Hold', an:62, tu:8, rg:4, eg:6, mc:'401B', cat:'Diversified resources scale', q:3, v:2, desc:'Diversified materials exposure with lower thematic purity.', rsi:46, ytd:8, vn:'Macro resources anchor more than a pure AI play.', hi:90, lo:50, avg:75, f:[4,7,10,4,4,5], nw:true },
+      { t:'SBSW', n:'Sibanye Stillwater', sec:'materials', sub:'PGM', p:13.09, ch:-0.76, r:'Hold', an:48, tu:20, rg:8, eg:0, mc:'9.3B', cat:'PGM and metals optionality', q:1, v:2, desc:'Higher-risk metals exposure with macro sensitivity.', rsi:35, ytd:-22, vn:'Weak momentum, more rebound setup than quality story.', hi:22, lo:5, avg:14, f:[9,5,4,5,8,5], nw:true },
+      { t:'VAL', n:'Valaris', sec:'materials', sub:'Drilling', p:94.60, ch:3.20, r:'Buy', an:68, tu:25, rg:12, eg:30, mc:'7B', cat:'Energy service optionality', q:2, v:3, desc:'Drilling and energy-cycle torque with indirect AI power linkage.', rsi:67, ytd:48, vn:'More cyclical than thematic.', hi:120, lo:40, avg:100, f:[8,6,4,6,8,6], nw:true },
+      { t:'XPRO', n:'Expro Group', sec:'materials', sub:'Services', p:16.11, ch:-0.31, r:'Hold', an:55, tu:35, rg:5, eg:10, mc:'1.8B', cat:'Oilfield services angle', q:1, v:3, desc:'Services exposure with weaker direct AI thematic relevance.', rsi:40, ytd:-15, vn:'Peripheral to the core theme.', hi:25, lo:10, avg:20, f:[7,5,3,4,7,5], nw:true },
+      { t:'PALL', n:'abrdn Palladium ETF', sec:'materials', sub:'ETF', p:141.58, ch:-0.90, r:'ETF', an:0, tu:0, rg:0, eg:0, mc:'0.5B', cat:'Palladium ETF', q:0, v:0, desc:'Commodity ETF exposure rather than operating equity.', rsi:43, ytd:-8, vn:'Useful only if you want metals beta.', hi:0, lo:0, avg:0, f:[7,5,2,4,6,5], nw:true }
     ];
 
     const SM = {
-      nuclear:   { label:'Nuclear',   icon:'☢️', color:'#00E5A0', cd:'rgba(0,229,160,0.12)', desc:'Nuclear beneficiaries across power generation and fuel cycle.' },
-      power:     { label:'AI Power',  icon:'⚡', color:'#FFD93D', cd:'rgba(255,217,61,0.12)', desc:'Power demand and generation exposure linked to AI data centers.' },
-      photonics: { label:'Photonics', icon:'🟣', color:'#7B61FF', cd:'rgba(123,97,255,0.12)', desc:'Optics and interconnect beneficiaries tied to AI networking.' },
-      infra:     { label:'AI Infra',  icon:'🖥️', color:'#FF6B35', cd:'rgba(255,107,53,0.12)', desc:'Compute, networking, cooling, and hardware stack exposure.' },
-      materials: { label:'Materials', icon:'⛏️', color:'#4ECDC4', cd:'rgba(78,205,196,0.12)', desc:'Raw materials and electrification-linked commodity exposure.' },
-      heatmap:   { label:'Heatmap',   icon:'🧩', color:'#FF61DC', cd:'rgba(255,97,220,0.12)', desc:'Market-cap weighted theme snapshot.' },
-      matrix:    { label:'Matrix',    icon:'🧠', color:'#00E5FF', cd:'rgba(0,229,255,0.12)', desc:'Quality versus valuation framing.' },
-      perf:      { label:'Performance',icon:'📈',color:'#F97316', cd:'rgba(249,115,22,0.12)', desc:'Relative YTD performance by segment.' },
-      corr:      { label:'Correlation',icon:'🔗',color:'#A78BFA', cd:'rgba(167,139,250,0.12)', desc:'Directional relationship map across themes.' },
-      news:      { label:'News',      icon:'📰', color:'#38BDF8', cd:'rgba(56,189,248,0.12)', desc:'Live company-specific headlines.' }
+      nuclear:   { label:'Nuclear', icon:'☢️', color:'#00E5A0', cd:'rgba(0,229,160,0.12)', desc:'Nuclear beneficiaries across generation and fuel.' },
+      power:     { label:'AI Power', icon:'⚡', color:'#FFD93D', cd:'rgba(255,217,61,0.12)', desc:'Power demand and generation linked to AI load.' },
+      photonics: { label:'Photonics', icon:'🟣', color:'#7B61FF', cd:'rgba(123,97,255,0.12)', desc:'Optics and interconnect names leveraged to AI networking.' },
+      infra:     { label:'AI Infra', icon:'🖥️', color:'#FF6B35', cd:'rgba(255,107,53,0.12)', desc:'Core compute, networking, and cooling exposure.' },
+      materials: { label:'Materials', icon:'⛏️', color:'#4ECDC4', cd:'rgba(78,205,196,0.12)', desc:'Materials and commodities tied to electrification and buildout.' },
+      heatmap:   { label:'Heatmap', icon:'🧩', color:'#FF61DC', cd:'rgba(255,97,220,0.12)', desc:'Market-cap weighted theme map.' },
+      matrix:    { label:'Matrix', icon:'🧠', color:'#00E5FF', cd:'rgba(0,229,255,0.12)', desc:'Quality versus valuation framing.' },
+      perf:      { label:'Performance', icon:'📈', color:'#F97316', cd:'rgba(249,115,22,0.12)', desc:'YTD performance by theme.' },
+      corr:      { label:'Correlation', icon:'🔗', color:'#A78BFA', cd:'rgba(167,139,250,0.12)', desc:'Directional theme relationship map.' },
+      news:      { label:'News', icon:'📰', color:'#38BDF8', cd:'rgba(56,189,248,0.12)', desc:'Live company-specific headlines.' }
     };
 
     const tabGroups = [
@@ -152,16 +168,61 @@
     ];
 
     const tabHelp = {
-      nuclear:'Nuclear-linked beneficiaries across generation, fuel, and advanced reactor exposure.',
-      power:'Power demand, generation, and grid constraint beneficiaries tied to AI expansion.',
-      photonics:'Optical components, lasers, modules, and interconnect names leveraged to AI networking.',
-      infra:'Core compute, networking, servers, cooling, and AI infrastructure buildout.',
-      materials:'Commodity and raw-material exposure tied to electrification and AI capex.',
-      heatmap:'Box size reflects market-cap importance while color reflects near-term move.',
-      matrix:'Quickly inspect which ideas sit in stronger quality or better valuation framing buckets.',
-      perf:'Compare YTD winners and laggards by segment to spot leadership and mean-reversion candidates.',
-      corr:'Directional relationship map for themes; useful for context, not a statistical trading signal.',
-      news:'Connect Finnhub to stream company-specific headlines inside the dashboard.'
+      nuclear:'Nuclear-linked beneficiaries across generation, fuel, enrichment, and advanced reactor exposure.',
+      power:'Power demand, generation, and grid bottleneck beneficiaries linked to AI expansion.',
+      photonics:'Optical modules, lasers, and bandwidth-enabling names leveraged to AI networking.',
+      infra:'Core compute, networking, cooling, connectors, servers, and infrastructure buildout.',
+      materials:'Commodity and material exposure tied to electrification and capex expansion.',
+      heatmap:'Size reflects market-cap weight while color reflects daily move.',
+      matrix:'Map names by quality and valuation framing to spot clusters quickly.',
+      perf:'Compare YTD leadership and laggards inside each theme.',
+      corr:'Directional relationship map for themes; useful for context, not a trading model.',
+      news:'Connect Finnhub to load company-specific headlines.'
+    };
+
+    const LOGOS = {
+      CEG: 'https://logo.clearbit.com/constellationenergy.com',
+      CCJ: 'https://logo.clearbit.com/cameco.com',
+      OKLO: 'https://logo.clearbit.com/oklo.com',
+      LEU: 'https://logo.clearbit.com/centrusenergy.com',
+      UEC: 'https://logo.clearbit.com/uraniumenergy.com',
+      SMR: 'https://logo.clearbit.com/nuscalepower.com',
+      NNE: 'https://logo.clearbit.com/nanonuclearenergy.com',
+      DNN: 'https://logo.clearbit.com/denisonmines.com',
+      UUUU: 'https://logo.clearbit.com/energyfuels.com',
+      URA: '',
+      URNM: '',
+      GEV: 'https://logo.clearbit.com/gevernova.com',
+      BE: 'https://logo.clearbit.com/bloomenergy.com',
+      WULF: 'https://logo.clearbit.com/terawulf.com',
+      NBIS: 'https://logo.clearbit.com/nebius.com',
+      APD: 'https://logo.clearbit.com/airproducts.com',
+      LIN: 'https://logo.clearbit.com/linde.com',
+      LITE: 'https://logo.clearbit.com/lumentum.com',
+      COHR: 'https://logo.clearbit.com/coherent.com',
+      MRVL: 'https://logo.clearbit.com/marvell.com',
+      FN: 'https://logo.clearbit.com/fabrinet.com',
+      MTSI: 'https://logo.clearbit.com/macom.com',
+      MKSI: 'https://logo.clearbit.com/mks.com',
+      IPGP: 'https://logo.clearbit.com/ipgphotonics.com',
+      AAOI: 'https://logo.clearbit.com/ao-inc.com',
+      NVDA: 'https://logo.clearbit.com/nvidia.com',
+      INTC: 'https://logo.clearbit.com/intel.com',
+      ORCL: 'https://logo.clearbit.com/oracle.com',
+      AVGO: 'https://logo.clearbit.com/broadcom.com',
+      VRT: 'https://logo.clearbit.com/vertiv.com',
+      APH: 'https://logo.clearbit.com/amphenol.com',
+      DELL: 'https://logo.clearbit.com/dell.com',
+      CRDO: 'https://logo.clearbit.com/credosemi.com',
+      EME: 'https://logo.clearbit.com/emcor.net',
+      FCX: 'https://logo.clearbit.com/fcx.com',
+      SCCO: 'https://logo.clearbit.com/southerncoppercorp.com',
+      LAC: 'https://logo.clearbit.com/lithiumamericas.com',
+      BHP: 'https://logo.clearbit.com/bhp.com',
+      SBSW: 'https://logo.clearbit.com/sibanyestillwater.com',
+      VAL: 'https://logo.clearbit.com/valaris.com',
+      XPRO: 'https://logo.clearbit.com/expro.com',
+      PALL: ''
     };
 
     async function fhQuote(sym, key) {
@@ -170,7 +231,7 @@
         if (!r.ok) return null;
         const d = await r.json();
         if (!d || !d.c) return null;
-        return { price:d.c, change:d.d || 0, changePct:d.dp || 0 };
+        return { price: d.c, change: d.d || 0, changePct: d.dp || 0 };
       } catch {
         return null;
       }
@@ -178,12 +239,12 @@
 
     async function fhNews(sym, key) {
       try {
-        const to = new Date().toISOString().slice(0,10);
-        const from = new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
-        const r = await fetch(`https://finnhub.io/api/v1/company-news?symbol=${sym}&from=${from}&to=${to}&token=${key}`);
+        const to = new Date().toISOString().slice(0, 10);
+        const fr = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+        const r = await fetch(`https://finnhub.io/api/v1/company-news?symbol=${sym}&from=${fr}&to=${to}&token=${key}`);
         if (!r.ok) return [];
         const d = await r.json();
-        return Array.isArray(d) ? d.slice(0,8) : [];
+        return Array.isArray(d) ? d.slice(0, 8) : [];
       } catch {
         return [];
       }
@@ -191,6 +252,75 @@
 
     function delay(ms) {
       return new Promise(r => setTimeout(r, ms));
+    }
+
+    function getInitials(name, ticker) {
+      if (ticker && ticker.length <= 4) return ticker.slice(0, 2).toUpperCase();
+      if (!name) return '?';
+      const parts = String(name).trim().split(/\s+/).filter(Boolean);
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+
+    function Logo({ ticker, name, size = 34, accent = '#00E5FF' }) {
+      const [failed, setFailed] = useState(false);
+      const src = LOGOS[ticker];
+
+      if (!src || failed) {
+        return (
+          <div
+            title={name}
+            style={{
+              width: size,
+              height: size,
+              minWidth: size,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: `linear-gradient(135deg, ${accent}28, rgba(255,255,255,0.06))`,
+              border: `1px solid ${accent}30`,
+              color: '#E5E7EB',
+              fontSize: size <= 28 ? 10 : 11,
+              fontWeight: 800,
+              letterSpacing: '.4px',
+              overflow: 'hidden',
+              userSelect: 'none'
+            }}
+          >
+            {getInitials(name, ticker)}
+          </div>
+        );
+      }
+
+      return (
+        <div
+          title={name}
+          style={{
+            width: size,
+            height: size,
+            minWidth: size,
+            borderRadius: '50%',
+            overflow: 'hidden',
+            background: '#fff',
+            border: '1px solid rgba(255,255,255,0.10)'
+          }}
+        >
+          <img
+            src={src}
+            alt={name}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            onError={() => setFailed(true)}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block'
+            }}
+          />
+        </div>
+      );
     }
 
     function Badge({ children, color, bg }) {
@@ -211,1134 +341,78 @@
 
     function RsiBadge({ rsi }) {
       if (rsi == null) return null;
-      let color = '#6B7280', bg = 'rgba(107,114,128,.12)', label = 'Neutral';
-      if (rsi >= 70) { color = '#FF6B6B'; bg = 'rgba(255,107,107,.12)'; label = 'Hot'; }
-      else if (rsi >= 60) { color = '#FFD93D'; bg = 'rgba(255,217,61,.12)'; label = 'Warm'; }
-      else if (rsi <= 35) { color = '#00E5A0'; bg = 'rgba(0,229,160,.12)'; label = 'Cold'; }
-      return <Badge color={color} bg={bg}>RSI {rsi} · {label}</Badge>;
+      const ob = rsi >= 70;
+      const os = rsi <= 30;
+      const hot = rsi >= 60;
+      const cold = rsi <= 40;
+      const c = ob ? '#FF6B6B' : os ? '#00E5A0' : hot ? '#FFD93D' : cold ? '#4ECDC4' : '#6B7280';
+      const l = ob ? 'Hot' : os ? 'Oversold' : hot ? 'Warm' : cold ? 'Cool' : '';
+      return (
+        <span style={{
+          fontSize:'10px',
+          padding:'2px 6px',
+          borderRadius:'4px',
+          background:`${c}18`,
+          color:c,
+          border:`1px solid ${c}30`,
+          fontWeight:600
+        }}>
+          RSI {rsi}{l ? ` · ${l}` : ''}
+        </span>
+      );
     }
 
-    function StatBar({ label, value, max = 100, color = '#00E5FF' }) {
-      const width = Math.min(Math.abs(value) / max * 100, 100);
-      const isNeg = value < 0;
+    function Bar({ val, mx, c, lb }) {
       return (
-        <div style={{ marginBottom:'8px' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', marginBottom:'4px' }}>
-            <span className="subtle">{label}</span>
-            <span className="mono" style={{ color: isNeg ? '#FF6B6B' : color, fontWeight:700 }}>
-              {value > 0 ? '+' : ''}{value}
+        <div style={{ marginBottom:'5px' }}>
+          <div style={{
+            display:'flex',
+            justifyContent:'space-between',
+            fontSize:'11px',
+            color:'#8A8F98',
+            marginBottom:'2px'
+          }}>
+            <span>{lb}</span>
+            <span style={{
+              color: val > 0 ? c : val < 0 ? '#FF6B6B' : '#555',
+              fontWeight:600,
+              fontFamily:'monospace'
+            }}>
+              {val > 0 ? '+' : ''}{val}
             </span>
           </div>
-          <div style={{ height:'6px', borderRadius:'999px', background:'rgba(255,255,255,.05)', overflow:'hidden' }}>
+          <div style={{ height:'4px', background:'rgba(255,255,255,0.04)', borderRadius:'2px' }}>
             <div style={{
-              width:`${width}%`,
               height:'100%',
-              background:isNeg ? 'linear-gradient(90deg,#FF6B6B,#FF9D9D)' : `linear-gradient(90deg,${color}66,${color})`,
-              borderRadius:'999px'
+              width:`${Math.min(Math.abs(val) / mx * 100, 100)}%`,
+              borderRadius:'2px',
+              background:`linear-gradient(90deg, ${c}88, ${c})`
             }} />
           </div>
         </div>
       );
     }
 
-    function MiniRangeChart({ stock, color }) {
-      if (!stock.hi || !stock.lo || !stock.p) return null;
-      const min = stock.lo * 0.9;
-      const max = stock.hi * 1.1;
-      const pos = ((stock.p - min) / (max - min)) * 180 + 20;
-      const y = (v) => 90 - ((v - min) / (max - min)) * 60;
-
-      return (
-        <svg viewBox="0 0 220 110" style={{ width:'100%', maxWidth:'240px' }}>
-          <line x1="20" y1={y(stock.hi)} x2="200" y2={y(stock.hi)} stroke="#00E5A0" strokeDasharray="3,3" strokeWidth="1" />
-          <line x1="20" y1={y(stock.avg)} x2="200" y2={y(stock.avg)} stroke="#FFD93D" strokeDasharray="3,3" strokeWidth="1" />
-          <line x1="20" y1={y(stock.lo)} x2="200" y2={y(stock.lo)} stroke="#FF6B6B" strokeDasharray="3,3" strokeWidth="1" />
-          <circle cx={pos} cy={y(stock.p)} r="4" fill={color} />
-          <text x="202" y={y(stock.hi)+3} fill="#00E5A0" fontSize="9" textAnchor="end">High {stock.hi}</text>
-          <text x="202" y={y(stock.avg)+3} fill="#FFD93D" fontSize="9" textAnchor="end">Avg {stock.avg}</text>
-          <text x="202" y={y(stock.lo)+3} fill="#FF6B6B" fontSize="9" textAnchor="end">Low {stock.lo}</text>
-          <text x={Math.min(Math.max(pos, 34), 180)} y={y(stock.p)-8} fill="#FFF" fontSize="10" textAnchor="middle">{stock.p}</text>
-        </svg>
-      );
-    }
-
-    function Radar({ values = [], color = '#00E5FF' }) {
-      const labels = ['Fwd','Val','Str','Mom','Beta','Ups'];
-      const cx = 90, cy = 90, r = 62;
-      const angles = labels.map((_, i) => (Math.PI * 2 * i / labels.length) - Math.PI/2);
-      const pts = labels.map((_, i) => {
-        const val = values[i] || 0;
-        const rr = (val / 10) * r;
-        return [cx + Math.cos(angles[i]) * rr, cy + Math.sin(angles[i]) * rr];
-      });
+    function Radar({ f, color }) {
+      const lb = ['Fwd','Val','Str','Mom','Beta','Ups'];
+      const ks = f || [];
+      const cx = 90, cy = 90, r = 65;
+      const an = ks.map((_, i) => Math.PI * 2 * i / ks.length - Math.PI / 2);
+      const pts = ks.map((k, i) => ({
+        x: cx + Math.cos(an[i]) * r * (k / 10),
+        y: cy + Math.sin(an[i]) * r * (k / 10)
+      }));
 
       return (
         <svg viewBox="0 0 180 180" style={{ width:'100%', maxWidth:'200px' }}>
-          {[.25,.5,.75,1].map((lv, idx) => (
+          {[.25,.5,.75,1].map((lv, li) => (
             <polygon
-              key={idx}
-              points={angles.map(a => `${cx + Math.cos(a)*r*lv},${cy + Math.sin(a)*r*lv}`).join(' ')}
+              key={li}
+              points={an.map(a => `${cx + Math.cos(a) * r * lv},${cy + Math.sin(a) * r * lv}`).join(' ')}
               fill="none"
-              stroke="rgba(255,255,255,.08)"
-              strokeWidth=".8"
+              stroke="rgba(255,255,255,0.08)"
+              strokeWidth=".5"
             />
           ))}
-          {angles.map((a, i) => (
-            <g key={i}>
-              <line x1={cx} y1={cy} x2={cx + Math.cos(a)*r} y2={cy + Math.sin(a)*r} stroke="rgba(255,255,255,.06)" />
-              <text x={cx + Math.cos(a)*(r+15)} y={cy + Math.sin(a)*(r+15)} fill="#8A8F98" fontSize="8" textAnchor="middle" dominantBaseline="middle">{labels[i]}</text>
-            </g>
-          ))}
-          <polygon points={pts.map(p => p.join(',')).join(' ')} fill={`${color}33`} stroke={color} strokeWidth="1.5" />
-        </svg>
-      );
-    }
-
-    function Summary({ stocks, color }) {
-      const nonEtf = stocks.filter(x => x.r !== 'ETF');
-      const priced = stocks.filter(x => x.p > 0);
-      const avgUpside = nonEtf.length ? Math.round(nonEtf.reduce((a,x)=>a+(x.tu||0),0)/nonEtf.length) : 0;
-      const avgMove = priced.length ? (priced.reduce((a,x)=>a+(x.ch||0),0)/priced.length).toFixed(2) : '0.00';
-      const leader = [...nonEtf].sort((a,b)=>(b.ytd||0)-(a.ytd||0))[0];
-
-      const items = [
-        { label:'Names', value:stocks.length },
-        { label:'Avg Upside', value:`${avgUpside}%` },
-        { label:'Avg Day', value:`${avgMove}%` },
-        { label:'Leader', value: leader ? leader.t : '—' }
-      ];
-
-      return (
-        <div style={{
-          display:'grid',
-          gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))',
-          gap:'1px',
-          background:'rgba(255,255,255,.04)',
-          borderRadius:'12px',
-          overflow:'hidden',
-          marginBottom:'16px'
-        }}>
-          {items.map((m, i) => (
-            <div key={i} style={{ background:'#0B0E13', padding:'14px 10px', textAlign:'center' }}>
-              <div style={{ fontSize:'10px', color:'#6B7280', marginBottom:'6px', textTransform:'uppercase' }}>{m.label}</div>
-              <div className="mono" style={{ fontSize:'18px', fontWeight:800, color }}>{m.value}</div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    function StockCard({ s, accent, i }) {
-      const [open, setOpen] = useState(false);
-      const ratingColor =
-        s.r.includes('Strong') ? '#00E5A0' :
-        s.r === 'Buy' ? '#5EDFB0' :
-        s.r === 'ETF' ? '#4ECDC4' :
-        s.r === 'Hold' ? '#A78BFA' : '#E5C84C';
-
-      return (
-        <div
-          className="card"
-          onClick={() => setOpen(!open)}
-          style={{
-            padding:'16px',
-            cursor:'pointer',
-            position:'relative',
-            animationDelay:`${i * 0.025}s`
-          }}
-        >
-          {s.nw && (
-            <div style={{
-              position:'absolute',
-              top:'10px',
-              right:'10px',
-              padding:'3px 7px',
-              borderRadius:'999px',
-              background:'rgba(255,107,53,.14)',
-              color:'#FF6B35',
-              fontSize:'10px',
-              fontWeight:800
-            }}>
-              NEW
-            </div>
-          )}
-
-          <div style={{
-            position:'absolute',
-            right:'12px',
-            bottom:'12px',
-            fontSize:'10px',
-            color:'#6B7280',
-            fontWeight:700
-          }}>
-            {open ? 'Hide details' : 'Details'}
-          </div>
-
-          <div style={{ display:'flex', justifyContent:'space-between', gap:'12px', marginBottom:'10px' }}>
-            <div>
-              <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', alignItems:'center', marginBottom:'5px' }}>
-                <span className="mono" style={{ fontSize:'21px', fontWeight:800, color:'#F3F4F6' }}>{s.t}</span>
-                <Badge color={ratingColor} bg={`${ratingColor}18`}>{s.r}</Badge>
-                <RsiBadge rsi={s.rsi} />
-              </div>
-              <div style={{ fontSize:'13px', color:'#9CA3AF' }}>{s.n}</div>
-            </div>
-
-            <div style={{ textAlign:'right' }}>
-              <div className="mono" style={{ fontSize:'20px', fontWeight:800, color:'#F9FAFB' }}>
-                {s.p ? (s.p < 100 ? s.p.toFixed(2) : s.p.toLocaleString(undefined,{maximumFractionDigits:2})) : '—'}
-              </div>
-              <div className="mono" style={{
-                fontSize:'13px',
-                fontWeight:700,
-                color: s.ch > 0 ? '#00E5A0' : s.ch < 0 ? '#FF6B6B' : '#6B7280'
-              }}>
-                {s.ch > 0 ? '+' : ''}{s.ch?.toFixed?.(2) ?? s.ch}%
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', marginBottom:'12px' }}>
-            <Badge color={accent} bg={`${accent}15`}>{s.sub}</Badge>
-            <Badge>{s.mc}</Badge>
-            <Badge color={(s.ytd || 0) >= 0 ? '#00E5A0' : '#FF6B6B'} bg={(s.ytd || 0) >= 0 ? 'rgba(0,229,160,.08)' : 'rgba(255,107,107,.08)'}>
-              YTD {(s.ytd || 0) > 0 ? '+' : ''}{s.ytd}%
-            </Badge>
-          </div>
-
-          <div style={{
-            padding:'10px 12px',
-            borderRadius:'10px',
-            background:'rgba(255,255,255,.015)',
-            borderLeft:`2px solid ${accent}55`,
-            marginBottom: open ? '12px' : '0'
-          }}>
-            <div style={{ fontSize:'12px', color:'#CBD5E1', lineHeight:1.6 }}>
-              {s.vn || s.desc}
-            </div>
-          </div>
-
-          {open && (
-            <div style={{ marginTop:'12px', paddingTop:'12px', borderTop:'1px solid rgba(255,255,255,.06)' }}>
-              <div style={{ fontSize:'13px', color:'#D1D5DB', lineHeight:1.7, marginBottom:'14px' }}>
-                {s.desc}
-              </div>
-
-              {s.r !== 'ETF' && (
-                <div style={{ marginBottom:'12px' }}>
-                  <StatBar label="Target Upside" value={s.tu || 0} max={100} color={accent} />
-                  <StatBar label="Revenue Growth" value={s.rg || 0} max={200} color="#4ECDC4" />
-                  <StatBar label="EPS Growth" value={s.eg || 0} max={200} color="#FFD93D" />
-                </div>
-              )}
-
-              <div style={{
-                display:'grid',
-                gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',
-                gap:'16px',
-                alignItems:'start'
-              }}>
-                <div className="card" style={{ padding:'12px', background:'rgba(0,0,0,.22)' }}>
-                  <div style={{ fontSize:'11px', color:'#6B7280', marginBottom:'8px' }}>Trading Range</div>
-                  <MiniRangeChart stock={s} color={accent} />
-                </div>
-
-                <div className="card" style={{ padding:'12px', background:'rgba(0,0,0,.22)' }}>
-                  <div style={{ fontSize:'11px', color:'#6B7280', marginBottom:'8px' }}>Profile Radar</div>
-                  <Radar values={s.f} color={accent} />
-                </div>
-              </div>
-
-              <div style={{
-                marginTop:'12px',
-                fontSize:'12px',
-                color:'#E5C84C',
-                lineHeight:1.6,
-                background:'rgba(245,158,11,.06)',
-                border:'1px solid rgba(245,158,11,.12)',
-                borderRadius:'10px',
-                padding:'10px 12px'
-              }}>
-                {s.cat}
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    function WinnersBar({ stocks }) {
-      const priced = [...stocks].filter(s => s.p > 0).sort((a,b) => b.ch - a.ch);
-      const top = priced.slice(0,3);
-      const bot = priced.slice(-3).reverse();
-      const hot = stocks.filter(s => (s.rsi || 0) >= 70);
-      const cold = stocks.filter(s => (s.rsi || 0) <= 35);
-
-      const Block = ({ title, color, bg, items, renderRight }) => (
-        <div className="card" style={{ padding:'14px', background:bg, borderColor:`${color}25` }}>
-          <div style={{ fontSize:'12px', color:'#6B7280', fontWeight:700, marginBottom:'10px' }}>{title}</div>
-          {items.length ? items.map((s, i) => (
-            <div key={s.t} style={{
-              display:'flex',
-              justifyContent:'space-between',
-              alignItems:'center',
-              gap:'8px',
-              marginBottom:i === items.length - 1 ? 0 : '7px'
-            }}>
-              <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-                <span className="mono" style={{ color:'#F3F4F6', fontSize:'16px', fontWeight:800 }}>{s.t}</span>
-              </div>
-              {renderRight ? renderRight(s) : (
-                <span className="mono" style={{ color, fontSize:'15px', fontWeight:800 }}>
-                  {s.ch > 0 ? '+' : ''}{s.ch.toFixed(1)}%
-                </span>
-              )}
-            </div>
-          )) : <div className="subtle" style={{ fontSize:'12px' }}>—</div>}
-        </div>
-      );
-
-      return (
-        <div className="section" style={{ paddingTop:'16px', paddingBottom:'16px', borderBottom:'1px solid rgba(255,255,255,.05)' }}>
-          <div style={{
-            display:'grid',
-            gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',
-            gap:'12px'
-          }}>
-            <Block title="Top movers" color="#00E5A0" bg="rgba(0,229,160,.05)" items={top} />
-            <Block title="Lagging today" color="#FF6B6B" bg="rgba(255,107,107,.05)" items={bot} />
-            <Block
-              title="RSI hot"
-              color="#FF6B35"
-              bg="rgba(255,107,53,.05)"
-              items={hot}
-              renderRight={(s) => <span className="mono" style={{ color:'#FF6B35', fontWeight:800 }}>{s.rsi}</span>}
-            />
-            <Block
-              title="RSI cold"
-              color="#00E5A0"
-              bg="rgba(0,229,160,.04)"
-              items={cold}
-              renderRight={(s) => <span className="mono" style={{ color:'#00E5A0', fontWeight:800 }}>{s.rsi}</span>}
-            />
-          </div>
-        </div>
-      );
-    }
-
-    function HeatmapView({ stocks }) {
-      const ss = [...stocks].filter(s => parseMcap(s.mc) > 0).sort((a,b) => parseMcap(b.mc) - parseMcap(a.mc));
-      const total = ss.reduce((a,s) => a + parseMcap(s.mc), 0);
-
-      return (
-        <div>
-          <div style={{ fontSize:'12px', color:'#6B7280', marginBottom:'12px' }}>
-            Size reflects market-cap weight. Color reflects daily move.
-          </div>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:'4px' }}>
-            {ss.map(s => {
-              const weight = Math.max((parseMcap(s.mc) / total) * 100, 5);
-              const bg =
-                s.ch >= 2 ? 'rgba(0,229,160,.28)' :
-                s.ch > 0 ? 'rgba(0,229,160,.14)' :
-                s.ch <= -2 ? 'rgba(255,107,107,.28)' :
-                s.ch < 0 ? 'rgba(255,107,107,.14)' :
-                'rgba(255,255,255,.04)';
-              return (
-                <div
-                  key={s.t}
-                  className="card"
-                  title={`${s.n} · RSI ${s.rsi}`}
-                  style={{
-                    flex:`1 1 ${weight}%`,
-                    minWidth:'90px',
-                    minHeight: parseMcap(s.mc) >= 100 ? '110px' : '80px',
-                    background:bg,
-                    padding:'10px',
-                    display:'flex',
-                    flexDirection:'column',
-                    justifyContent:'space-between'
-                  }}
-                >
-                  <div>
-                    <div className="mono" style={{ fontSize:'15px', fontWeight:800, color:'#F3F4F6' }}>{s.t}</div>
-                    <div style={{ fontSize:'10px', color:'#9CA3AF', marginTop:'4px' }}>{s.n}</div>
-                  </div>
-                  <div>
-                    <div className="mono" style={{ fontSize:'13px', fontWeight:800, color:s.ch >= 0 ? '#00E5A0' : '#FF6B6B' }}>
-                      {s.ch > 0 ? '+' : ''}{s.ch.toFixed(2)}%
-                    </div>
-                    <div style={{ fontSize:'10px', color:'#6B7280' }}>{s.mc}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-
-    function MatrixView({ stocks }) {
-      const actionable = stocks.filter(s => s.q > 0 && s.v > 0);
-      const grid = {};
-      for (let q = 1; q <= 3; q++) {
-        for (let v = 1; v <= 3; v++) {
-          grid[`${q}-${v}`] = [];
-        }
-      }
-      actionable.forEach(s => {
-        grid[`${s.q}-${s.v}`].push(s);
-      });
-
-      const labelFor = (q, v) => {
-        if (q === 3 && v === 1) return { l:'Strong Buy', c:'#00E5A0', bg:'rgba(0,229,160,.08)' };
-        if (q === 3 && v === 2) return { l:'Buy', c:'#10B981', bg:'rgba(16,185,129,.06)' };
-        if (q === 3 && v === 3) return { l:'Patience', c:'#F59E0B', bg:'rgba(245,158,11,.06)' };
-        if (q === 2 && v === 1) return { l:'Buy', c:'#10B981', bg:'rgba(16,185,129,.06)' };
-        if (q === 2 && v === 2) return { l:'Hold', c:'#A78BFA', bg:'rgba(167,139,250,.06)' };
-        if (q === 2 && v === 3) return { l:'Avoid', c:'#EF4444', bg:'rgba(239,68,68,.05)' };
-        if (q === 1 && v === 1) return { l:'Speculative', c:'#F59E0B', bg:'rgba(245,158,11,.05)' };
-        return { l:'Avoid', c:'#EF4444', bg:'rgba(239,68,68,.05)' };
-      };
-
-      return (
-        <div style={{ overflowX:'auto' }}>
-          <div style={{
-            display:'grid',
-            gridTemplateColumns:'56px 1fr 1fr 1fr',
-            gap:'6px',
-            minWidth:'780px'
-          }}>
-            <div />
-            {[1,2,3].map(v => (
-              <div key={v} style={{ textAlign:'center', fontSize:'12px', fontWeight:700, color:v === 1 ? '#00E5A0' : v === 2 ? '#A78BFA' : '#EF4444' }}>
-                Valuation {v}
-              </div>
-            ))}
-
-            {[3,2,1].map(q => (
-              <React.Fragment key={q}>
-                <div style={{
-                  writingMode:'vertical-rl',
-                  transform:'rotate(180deg)',
-                  textAlign:'center',
-                  fontSize:'12px',
-                  fontWeight:700,
-                  color:q === 3 ? '#00E5A0' : q === 2 ? '#F59E0B' : '#EF4444'
-                }}>
-                  Quality {q}
-                </div>
-
-                {[1,2,3].map(v => {
-                  const meta = labelFor(q, v);
-                  const names = grid[`${q}-${v}`];
-                  return (
-                    <div
-                      key={`${q}-${v}`}
-                      className="card"
-                      style={{
-                        padding:'10px',
-                        minHeight:'110px',
-                        background:meta.bg,
-                        borderColor:`${meta.c}22`
-                      }}
-                    >
-                      <div style={{ fontSize:'11px', fontWeight:700, color:meta.c, marginBottom:'8px' }}>{meta.l}</div>
-                      <div style={{ display:'flex', flexWrap:'wrap', gap:'6px' }}>
-                        {names.map(s => (
-                          <span
-                            key={s.t}
-                            className="mono"
-                            style={{
-                              padding:'5px 8px',
-                              borderRadius:'999px',
-                              background:'rgba(0,0,0,.28)',
-                              border:'1px solid rgba(255,255,255,.05)',
-                              color:'#F3F4F6',
-                              fontWeight:700,
-                              fontSize:'11px'
-                            }}
-                            title={s.vn}
-                          >
-                            {s.t}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    function PerfView({ stocks }) {
-      const secs = ['nuclear','power','photonics','infra','materials'];
-      return (
-        <div>
-          {secs.map(sec => {
-            const meta = SM[sec];
-            const items = [...stocks].filter(s => s.sec === sec && s.r !== 'ETF').sort((a,b) => b.ytd - a.ytd);
-            const max = Math.max(...items.map(x => Math.abs(x.ytd || 0)), 1);
-
-            return (
-              <div key={sec} style={{ marginBottom:'22px' }}>
-                <div style={{ color:meta.color, fontSize:'14px', fontWeight:800, marginBottom:'8px' }}>
-                  {meta.icon} {meta.label}
-                </div>
-                {items.map((s, idx) => {
-                  const w = idx === 0;
-                  const l = idx === items.length - 1;
-                  return (
-                    <div
-                      key={s.t}
-                      style={{
-                        display:'flex',
-                        alignItems:'center',
-                        gap:'10px',
-                        padding:'7px 10px',
-                        borderRadius:'10px',
-                        background:w ? 'rgba(0,229,160,.06)' : l ? 'rgba(255,107,107,.06)' : 'transparent',
-                        marginBottom:'4px'
-                      }}
-                    >
-                      <span className="mono" style={{ width:'58px', fontSize:'14px', fontWeight:800 }}>{s.t}</span>
-                      <div style={{ flex:1, height:'18px', background:'rgba(255,255,255,.04)', borderRadius:'999px', position:'relative', overflow:'hidden' }}>
-                        <div style={{
-                          position:'absolute',
-                          left:0,
-                          top:0,
-                          height:'100%',
-                          width:`${Math.abs(s.ytd)/max * 100}%`,
-                          background: s.ytd >= 0 ? `linear-gradient(90deg, ${meta.color}55, ${meta.color})` : 'linear-gradient(90deg,#FF6B6B55,#FF6B6B)',
-                          borderRadius:'999px'
-                        }} />
-                      </div>
-                      <span className="mono" style={{ width:'58px', textAlign:'right', fontWeight:800, color:s.ytd >= 0 ? '#00E5A0' : '#FF6B6B' }}>
-                        {s.ytd > 0 ? '+' : ''}{s.ytd}%
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-      );
-    }
-
-    function CorrView() {
-      const secs = ['nuclear','power','photonics','infra','materials'];
-      const corr = {
-        nuclear:{ nuclear:1.00, power:0.82, photonics:0.35, infra:0.45, materials:0.55 },
-        power:{ nuclear:0.82, power:1.00, photonics:0.48, infra:0.65, materials:0.40 },
-        photonics:{ nuclear:0.35, power:0.48, photonics:1.00, infra:0.88, materials:0.20 },
-        infra:{ nuclear:0.45, power:0.65, photonics:0.88, infra:1.00, materials:0.30 },
-        materials:{ nuclear:0.55, power:0.40, photonics:0.20, infra:0.30, materials:1.00 }
-      };
-
-      const colorOf = (v) => {
-        if (v >= .8) return '#00E5A0';
-        if (v >= .6) return '#4ECDC4';
-        if (v >= .4) return '#FFD93D';
-        if (v >= .2) return '#F97316';
-        return '#FF6B6B';
-      };
-
-      return (
-        <div>
-          <div style={{ fontSize:'12px', color:'#6B7280', marginBottom:'14px' }}>
-            Higher numbers suggest directional theme overlap. This is a framework view, not a statistical correlation engine.
-          </div>
-
-          <div style={{ overflowX:'auto' }}>
-            <table style={{ borderCollapse:'separate', borderSpacing:'4px', margin:'0 auto' }}>
-              <thead>
-                <tr>
-                  <td style={{ width:'90px' }} />
-                  {secs.map(s => (
-                    <td key={s} style={{ textAlign:'center', padding:'8px', fontSize:'12px', fontWeight:700, color:SM[s].color }}>
-                      {SM[s].icon}<br />{SM[s].label}
-                    </td>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {secs.map(r => (
-                  <tr key={r}>
-                    <td style={{ textAlign:'right', fontSize:'12px', fontWeight:700, color:SM[r].color, padding:'8px' }}>
-                      {SM[r].icon} {SM[r].label}
-                    </td>
-                    {secs.map(c => {
-                      const v = corr[r][c];
-                      const cc = colorOf(v);
-                      return (
-                        <td
-                          key={c}
-                          style={{
-                            minWidth:'74px',
-                            textAlign:'center',
-                            padding:'14px 16px',
-                            borderRadius:'10px',
-                            background:`${cc}20`,
-                            border:`1px solid ${cc}28`,
-                            color:cc,
-                            fontWeight:800,
-                            fontFamily:'ui-monospace, SFMono-Regular, Menlo, monospace'
-                          }}
-                        >
-                          {v.toFixed(2)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div style={{
-            display:'grid',
-            gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',
-            gap:'10px',
-            marginTop:'20px'
-          }}>
-            {[
-              { title:'Photonics ↔ AI Infra', val:'0.88', color:'#00E5A0', note:'Optics and interconnect demand often rise with accelerated cluster buildouts.' },
-              { title:'Nuclear ↔ AI Power', val:'0.82', color:'#00E5A0', note:'Both themes benefit when durable electricity demand expectations rise.' },
-              { title:'Power ↔ AI Infra', val:'0.65', color:'#4ECDC4', note:'Data-center buildouts tighten the link between hardware deployment and power bottlenecks.' },
-              { title:'Materials ↔ Photonics', val:'0.20', color:'#FF6B6B', note:'The relationship is weaker because raw materials respond to broader macro and commodity cycles.' }
-            ].map((x, i) => (
-              <div key={i} className="card" style={{ padding:'14px' }}>
-                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
-                  <span style={{ fontSize:'13px', fontWeight:700, color:'#F3F4F6' }}>{x.title}</span>
-                  <span className="mono" style={{ fontSize:'16px', fontWeight:800, color:x.color }}>{x.val}</span>
-                </div>
-                <div style={{ fontSize:'11px', color:'#9CA3AF', lineHeight:1.6 }}>{x.note}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    function NewsView({ apiKey }) {
-      const [sym, setSym] = useState('NVDA');
-      const [input, setInput] = useState('NVDA');
-      const [news, setNews] = useState([]);
-      const [loading, setLoading] = useState(false);
-      const tickers = initStocks.filter(s => s.r !== 'ETF').map(s => s.t).slice(0, 18);
-
-      const load = useCallback(async (s) => {
-        if (!apiKey) {
-          setNews([]);
-          return;
-        }
-        setLoading(true);
-        const data = await fhNews(s, apiKey);
-        setNews(data);
-        setLoading(false);
-      }, [apiKey]);
-
-      useEffect(() => {
-        load(sym);
-      }, [sym, load]);
-
-      if (!apiKey) {
-        return (
-          <div className="card" style={{
-            padding:'22px',
-            background:'linear-gradient(180deg, rgba(56,189,248,0.08), rgba(56,189,248,0.03))',
-            border:'1px solid rgba(56,189,248,0.18)'
-          }}>
-            <div style={{ fontSize:'16px', fontWeight:800, color:'#EAF6FF', marginBottom:'8px' }}>
-              Live news is not connected
-            </div>
-            <div style={{ fontSize:'13px', color:'#9FB3C8', lineHeight:1.7, marginBottom:'12px' }}>
-              Add a Finnhub API key to load company-specific headlines and refresh live market context inside the dashboard.
-            </div>
-            <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
-              {['NVDA','SMR','BE','AVGO','PLTR'].map(t => (
-                <span key={t} className="pill" style={{ color:'#C7D7E6', cursor:'default' }}>{t}</span>
-              ))}
-            </div>
-            <div style={{ fontSize:'11px', color:'#6B7280', marginTop:'12px' }}>
-              Open API Settings, save your Finnhub key, and headlines will load immediately.
-            </div>
-          </div>
-        );
-      }
-
-      return (
-        <div>
-          <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', marginBottom:'14px' }}>
-            {tickers.map(t => (
-              <button
-                key={t}
-                onClick={() => { setSym(t); setInput(t); }}
-                className="pill"
-                style={{
-                  border: sym === t ? '1px solid rgba(56,189,248,.28)' : '1px solid rgba(255,255,255,.06)',
-                  background: sym === t ? 'rgba(56,189,248,.12)' : 'rgba(255,255,255,.02)',
-                  color: sym === t ? '#38BDF8' : '#8A93A2'
-                }}
-              >
-                {t}
-              </button>
-            ))}
-
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value.toUpperCase())}
-              onKeyDown={(e) => e.key === 'Enter' && setSym(input)}
-              placeholder="Ticker"
-              style={{
-                padding:'7px 10px',
-                borderRadius:'10px',
-                border:'1px solid rgba(255,255,255,.08)',
-                background:'rgba(255,255,255,.03)',
-                color:'#E5E7EB',
-                fontSize:'12px',
-                width:'110px',
-                outline:'none'
-              }}
-            />
-          </div>
-
-          <div style={{ fontSize:'16px', fontWeight:800, color:'#38BDF8', marginBottom:'12px' }}>
-            {sym} {loading && <span className="spinner" style={{ marginLeft:'8px' }} />}
-          </div>
-
-          {news.length ? news.map((n, i) => (
-            <a
-              key={i}
-              href={n.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="card"
-              style={{
-                display:'block',
-                padding:'14px',
-                textDecoration:'none',
-                marginBottom:'8px'
-              }}
-            >
-              <div style={{ display:'flex', justifyContent:'space-between', gap:'8px', marginBottom:'5px' }}>
-                <span style={{ fontSize:'13px', fontWeight:700, color:'#F3F4F6', lineHeight:1.5 }}>
-                  {(n.headline || '').slice(0, 96)}{(n.headline || '').length > 96 ? '...' : ''}
-                </span>
-                <span style={{ fontSize:'10px', color:'#6B7280', whiteSpace:'nowrap' }}>
-                  {n.datetime ? new Date(n.datetime * 1000).toLocaleDateString('en-US') : ''}
-                </span>
-              </div>
-              <div style={{ fontSize:'11px', color:'#9CA3AF', lineHeight:1.6 }}>
-                {(n.summary || '').slice(0, 160)}{(n.summary || '').length > 160 ? '...' : ''}
-              </div>
-              <div style={{ fontSize:'10px', color:'#6B7280', marginTop:'6px' }}>{n.source}</div>
-            </a>
-          )) : (
-            <div style={{ padding:'30px', textAlign:'center', color:'#4B5563' }}>
-              {loading ? 'Loading headlines...' : 'No headlines found for this ticker.'}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    function App() {
-      const [tab, setTab] = useState('nuclear');
-      const [sort, setSort] = useState('default');
-      const [q, setQ] = useState('');
-      const [quick, setQuick] = useState('all');
-      const [apiKey, setApiKey] = useState(localStorage.getItem('fhkey') || '');
-      const [showSettings, setShowSettings] = useState(false);
-      const [keyInput, setKeyInput] = useState(localStorage.getItem('fhkey') || '');
-      const [stocks, setStocks] = useState(initStocks);
-      const [fetching, setFetching] = useState(false);
-      const [lastUpdate, setLastUpdate] = useState(null);
-      const timerRef = useRef(null);
-
-      const sec = SM[tab];
-      const isSpecial = ['heatmap', 'matrix', 'perf', 'corr', 'news'].includes(tab);
-      const ss = stocks.filter(s => s.sec === tab);
-
-      const sortOptions = [
-        { k:'default', l:'Default' },
-        { k:'change', l:'Day Move' },
-        { k:'ytd', l:'YTD' },
-        { k:'targetUpside', l:'Upside' },
-        { k:'rsi', l:'RSI' }
-      ];
-
-      const fetchAll = useCallback(async () => {
-        if (!apiKey) return;
-        setFetching(true);
-
-        const updated = [...stocks];
-        for (let i = 0; i < updated.length; i++) {
-          const s = updated[i];
-          if (s.r === 'ETF' || !/^[A-Z]{1,5}$/.test(s.t)) continue;
-          const quote = await fhQuote(s.t, apiKey);
-          if (quote && quote.price > 0) {
-            updated[i] = { ...s, p: quote.price, ch: quote.changePct };
-          }
-          if (i % 25 === 24) await delay(1100);
-        }
-
-        setStocks(updated);
-        setLastUpdate(new Date().toLocaleTimeString('en-US'));
-        setFetching(false);
-      }, [apiKey, stocks]);
-
-      useEffect(() => {
-        if (!apiKey) return;
-        fetchAll();
-        timerRef.current = setInterval(fetchAll, 5 * 60 * 1000);
-        return () => timerRef.current && clearInterval(timerRef.current);
-      }, [apiKey]);
-
-      const saveKey = () => {
-        localStorage.setItem('fhkey', keyInput);
-        setApiKey(keyInput);
-        setShowSettings(false);
-      };
-
-      const fs = useMemo(() => {
-        let st = [...ss];
-
-        if (q) {
-          const ql = q.toLowerCase();
-          st = st.filter(x =>
-            x.t.toLowerCase().includes(ql) ||
-            x.n.toLowerCase().includes(ql) ||
-            (x.sub || '').toLowerCase().includes(ql)
-          );
-        }
-
-        if (quick === 'strong-buy') st = st.filter(x => (x.r || '').includes('Strong'));
-        if (quick === 'buy-upside') st = st.filter(x => (x.r || '').includes('Buy') && (x.tu || 0) >= 20);
-        if (quick === 'new') st = st.filter(x => x.nw);
-        if (quick === 'oversold') st = st.filter(x => (x.rsi || 0) <= 40);
-        if (quick === 'hot') st = st.filter(x => (x.rsi || 0) >= 70);
-        if (quick === 'no-etf') st = st.filter(x => x.r !== 'ETF');
-
-        if (sort === 'change') st.sort((a,b) => b.ch - a.ch);
-        else if (sort === 'ytd') st.sort((a,b) => b.ytd - a.ytd);
-        else if (sort === 'targetUpside') st.sort((a,b) => b.tu - a.tu);
-        else if (sort === 'rsi') st.sort((a,b) => b.rsi - a.rsi);
-
-        return st;
-      }, [tab, sort, q, stocks, quick]);
-
-      return (
-        <div style={{ minHeight:'100vh', background:'#080A0F', color:'#E5E7EB' }}>
-          <div className="container">
-            <div style={{
-              padding:'20px 20px 14px',
-              borderBottom:'1px solid rgba(255,255,255,.05)',
-              display:'flex',
-              justifyContent:'space-between',
-              alignItems:'flex-start',
-              gap:'16px',
-              flexWrap:'wrap'
-            }}>
-              <div style={{ maxWidth:'780px' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'6px', flexWrap:'wrap' }}>
-                  <div style={{
-                    width:'8px',
-                    height:'8px',
-                    borderRadius:'50%',
-                    background:sec.color,
-                    animation:'pulse 2s infinite',
-                    boxShadow:`0 0 10px ${sec.color}66`
-                  }} />
-                  <span style={{
-                    fontSize:'11px',
-                    color:'#6B7280',
-                    textTransform:'uppercase',
-                    letterSpacing:'1.5px',
-                    fontWeight:700
-                  }}>
-                    AI Equity Dashboard
-                  </span>
-                  {fetching && <span className="spinner" />}
-                  {lastUpdate && (
-                    <span style={{ fontSize:'11px', color:'#667085' }}>
-                      Updated {lastUpdate}
-                    </span>
-                  )}
-                </div>
-
-                <h1 style={{
-                  fontSize:'28px',
-                  fontWeight:800,
-                  margin:'0 0 8px',
-                  color:'#F5F7FA',
-                  lineHeight:1.12
-                }}>
-                  AI Supply Chain Tracker
-                </h1>
-
-                <p style={{
-                  fontSize:'13px',
-                  color:'#98A2B3',
-                  lineHeight:1.65,
-                  maxWidth:'740px'
-                }}>
-                  Track AI-linked equities across nuclear, power, photonics, infrastructure, and materials.
-                  Use sector tabs for idea discovery and advanced views for relative strength, valuation framing, and theme behavior.
-                </p>
-              </div>
-
-              <div style={{ display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap' }}>
-                {apiKey && (
-                  <button
-                    onClick={fetchAll}
-                    disabled={fetching}
-                    className="pill"
-                    style={{
-                      border:'1px solid rgba(0,229,255,0.22)',
-                      background:'rgba(0,229,255,0.08)',
-                      color:'#00E5FF'
-                    }}
-                  >
-                    {fetching ? 'Refreshing...' : 'Refresh Live'}
-                  </button>
-                )}
-                <button
-                  onClick={() => setShowSettings(!showSettings)}
-                  className="pill"
-                >
-                  API Settings
-                </button>
-              </div>
-            </div>
-
-            {showSettings && (
-              <div style={{
-                padding:'12px 20px',
-                background:'rgba(0,229,255,0.04)',
-                borderBottom:'1px solid rgba(0,229,255,0.1)'
-              }}>
-                <div style={{ display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap' }}>
-                  <span style={{ fontSize:'12px', color:'#00E5FF', fontWeight:700 }}>Finnhub API Key</span>
-                  <input
-                    value={keyInput}
-                    onChange={(e) => setKeyInput(e.target.value)}
-                    type="password"
-                    placeholder="cxxxxxxxx"
-                    style={{
-                      padding:'8px 10px',
-                      borderRadius:'10px',
-                      border:'1px solid rgba(0,229,255,.2)',
-                      background:'rgba(0,0,0,.3)',
-                      color:'#E5E7EB',
-                      fontSize:'12px',
-                      width:'260px',
-                      outline:'none'
-                    }}
-                  />
-                  <button
-                    onClick={saveKey}
-                    style={{
-                      padding:'8px 14px',
-                      borderRadius:'10px',
-                      background:'#00E5FF',
-                      color:'#000',
-                      border:'none',
-                      fontSize:'12px',
-                      fontWeight:800,
-                      cursor:'pointer'
-                    }}
-                  >
-                    Save
-                  </button>
-                  <span style={{ fontSize:'10px', color:'#6B7280' }}>
-                    <a href="https://finnhub.io/register" target="_blank" rel="noreferrer" style={{ color:'#00E5FF' }}>finnhub.io</a> free plan rate-limits requests.
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <WinnersBar stocks={stocks} />
-
-            <div style={{
-              padding:'12px 20px',
-              borderBottom:'1px solid rgba(255,255,255,.03)',
-              display:'grid',
-              gap:'10px'
-            }}>
-              {tabGroups.map(group => (
-                <div key={group.label}>
-                  <div style={{
-                    fontSize:'11px',
-                    color:'#667085',
-                    fontWeight:700,
-                    marginBottom:'6px',
-                    textTransform:'uppercase',
-                    letterSpacing:'1px'
-                  }}>
-                    {group.label}
-                  </div>
-
-                  <div style={{ display:'flex', gap:'6px', overflowX:'auto', paddingBottom:'2px' }}>
-                    {group.items.map(k => {
-                      const meta = SM[k];
-                      const active = tab === k;
-                      return (
-                        <button
-                          key={k}
-                          onClick={() => {
-                            setTab(k);
-                            setSort('default');
-                            setQ('');
-                            setQuick('all');
-                          }}
-                          style={{
-                            display:'flex',
-                            alignItems:'center',
-                            gap:'6px',
-                            padding:'8px 12px',
-                            borderRadius:'10px',
-                            border: active ? `1px solid ${meta.color}44` : '1px solid transparent',
-                            background: active ? meta.cd : 'rgba(255,255,255,.015)',
-                            color: active ? meta.color : '#6B7280',
-                            fontSize:'12px',
-                            fontWeight: active ? 700 : 600,
-                            cursor:'pointer',
-                            whiteSpace:'nowrap',
-                            outline:'none'
-                          }}
-                        >
-                          <span style={{ fontSize:'14px' }}>{meta.icon}</span>
-                          {meta.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="section">
-              <p style={{ fontSize:'13px', color:'#9CA3AF', marginBottom:'12px', lineHeight:1.6 }}>
-                <span style={{ color:sec.color, fontWeight:700 }}>{sec.icon} {sec.label}</span>
-                {' — '}
-                {tabHelp[tab] || sec.desc}
-              </p>
-
-              {tab === 'heatmap' ? <HeatmapView stocks={stocks} /> :
-               tab === 'matrix' ? <MatrixView stocks={stocks} /> :
-               tab === 'perf' ? <PerfView stocks={stocks} /> :
-               tab === 'corr' ? <CorrView /> :
-               tab === 'news' ? <NewsView apiKey={apiKey} /> :
-               (
-                <>
-                  <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', marginBottom:'12px' }}>
-                    <div style={{ flex:'1 1 180px', position:'relative' }}>
-                      <input
-                        type="text"
-                        placeholder="Search ticker, name, subcategory..."
-                        value={q}
-                        onChange={(e) => setQ(e.target.value)}
-                        style={{
-                          width:'100%',
-                          padding:'10px 12px',
-                          borderRadius:'10px',
-                          border:'1px solid rgba(255,255,255,.07)',
-                          background:'rgba(255,255,255,.025)',
-                          color:'#E5E7EB',
-                          fontSize:'13px',
-                          outline:'none'
-                        }}
-                      />
-                    </div>
-
-                    <div style={{ display:'flex', gap:'6px', flexWrap:'wrap' }}>
-                      {sortOptions.map(o => (
-                        <button
-                          key={o.k}
-                          onClick={() => setSort(o.k)}
-                          style={{
-                            padding:'8px 10px',
-                            borderRadius:'10px',
-                            border: sort === o.k ? `1px solid ${sec.color}33` : '1px solid rgba(255,255,255,.05)',
-                            background: sort === o.k ? sec.cd : 'transparent',
-                            color: sort === o.k ? sec.color : '#6B7280',
-                            fontSize:'11px',
-                            fontWeight:700,
-                            cursor:'pointer',
-                            outline:'none'
-                          }}
-                        >
-                          {o.l}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', marginBottom:'16px' }}>
-                    {[
-                      ['all','All'],
-                      ['strong-buy','Strong Buy'],
-                      ['buy-upside','Buy + Upside'],
-                      ['new','New'],
-                      ['oversold','RSI <= 40'],
-                      ['hot','RSI >= 70'],
-                      ['no-etf','No ETF']
-                    ].map(([k, label]) => (
-                      <button
-                        key={k}
-                        onClick={() => setQuick(k)}
-                        style={{
-                          padding:'6px 10px',
-                          borderRadius:'999px',
-                          border: quick === k ? `1px solid ${sec.color}44` : '1px solid rgba(255,255,255,.06)',
-                          background: quick === k ? sec.cd : 'rgba(255,255,255,.02)',
-                          color: quick === k ? sec.color : '#8A93A2',
-                          fontSize:'11px',
-                          fontWeight:700,
-                          cursor:'pointer',
-                          outline:'none'
-                        }}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <Summary stocks={fs} color={sec.color} />
-
-                  <div style={{
-                    display:'grid',
-                    gridTemplateColumns:'repeat(auto-fill,minmax(340px,1fr))',
-                    gap:'12px'
-                  }}>
-                    {fs.map((s, i) => (
-                      <StockCard key={s.t} s={s} accent={sec.color} i={i} />
-                    ))}
-                  </div>
-                </>
-               )}
-            </div>
-
-            <div style={{
-              padding:'16px 20px 22px',
-              borderTop:'1px solid rgba(255,255,255,.03)',
-              textAlign:'center',
-              fontSize:'10px',
-              color:'#4B5563'
-            }}>
-              AI Supply Chain Tracker · single-file React dashboard
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    ReactDOM.render(<App />, document.getElementById('root'));
-  </script>
-</body>
-</html>
+          {an.map((a, i) => (
+            <g key={i
