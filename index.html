@@ -1,1003 +1,352 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Only Dashboard</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: #080A0F;
-      color: #E5E7EB;
-      font-family: Inter, system-ui, sans-serif;
-      min-height: 100vh;
-    }
-
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.06); border-radius: 2px; }
-
-    @keyframes fi {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes pl {
-      0%,100% { opacity: 1; }
-      50% { opacity: .35; }
-    }
-    @keyframes gl {
-      0% { background-position: 0 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0 50%; }
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255,255,255,.1);
-      border-top-color: #00E5FF;
-      border-radius: 50%;
-      animation: spin .6s linear infinite;
-      display: inline-block;
-    }
-  </style>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AI Only Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080A0F;color:#E5E7EB;font-family:'Inter',system-ui,sans-serif;min-height:100vh}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.06);border-radius:2px}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pl{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes gl{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.1);border-top-color:#00E5FF;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+</style>
 </head>
 <body>
-  <div id="root"></div>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const {useState,useMemo,useEffect,useCallback,useRef}=React;
+function parseMcap(s){if(!s)return 0;const n=parseFloat(s);if(s.includes('T'))return n*1000;if(s.includes('B'))return n;return n/1000;}
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+const initS=[
+  {t:"CEG",n:"Constellation Energy",sec:"nuclear",sub:"Nuclear Power",p:299.13,ch:1.49,r:"Buy",an:72,tu:12,rg:8,eg:13,mc:"101.9B",cat:"TMI 원전 재가동, Meta 20년 계약",q:3,v:1,desc:"미국 최대 원자력 발전 운영사",rsi:58,ytd:22,vn:"TMI 재가동 기대감에 프리미엄. 장기 계약 안정성 반영",hi:432.78,lo:138,avg:264.95,f:{vo:6,va:5,si:9,mo:7,be:6,ou:8},nw:false},
+  {t:"CCJ",n:"Cameco Corp",sec:"nuclear",sub:"Uranium Mining",p:120.25,ch:0.96,r:"Buy",an:74,tu:25,rg:30,eg:55,mc:"52.8B",cat:"Westinghouse 49%",q:3,v:2,desc:"세계 2위 우라늄",rsi:55,ytd:35,vn:"우라늄 상승 반영 중. Westinghouse 시너지 미반영",hi:180,lo:75,avg:150,f:{vo:7,va:6,si:8,mo:7,be:7,ou:8},nw:false},
+  {t:"OKLO",n:"Oklo Inc",sec:"nuclear",sub:"Advanced Nuclear",p:64.20,ch:1.34,r:"Buy",an:70,tu:80,rg:0,eg:0,mc:"16.2B",cat:"고속 핵분열, $2.6B",q:2,v:2,desc:"차세대 원자로",rsi:48,ytd:-15,vn:"매출 전 단계. 기술력 인정되나 상용화 리스크",hi:120,lo:30,avg:90,f:{vo:9,va:3,si:4,mo:6,be:9,ou:7},nw:false},
+  {t:"LEU",n:"Centrus Energy",sec:"nuclear",sub:"Enrichment",p:202.16,ch:2.21,r:"Buy",an:65,tu:30,rg:15,eg:25,mc:"3.2B",cat:"HALEU 독점",q:3,v:2,desc:"미국 유일 농축",rsi:52,ytd:-8,vn:"52주 고점 -40%. HALEU 독점 대비 저평가",hi:350,lo:100,avg:265,f:{vo:9,va:4,si:3,mo:5,be:8,ou:7},nw:true},
+  {t:"UEC",n:"Uranium Energy",sec:"nuclear",sub:"Mining",p:15.13,ch:2.09,r:"Buy",an:68,tu:35,rg:120,eg:0,mc:"6.1B",cat:"ISR 채굴",q:2,v:3,desc:"ISR 저비용",rsi:62,ytd:45,vn:"매출 120% 성장 대비 소형. 러시아 제재 수혜",hi:22,lo:8,avg:17,f:{vo:8,va:5,si:4,mo:6,be:8,ou:7},nw:true},
+  {t:"SMR",n:"NuScale Power",sec:"nuclear",sub:"SMR",p:11.41,ch:-2.56,r:"Hold",an:50,tu:80,rg:325,eg:0,mc:"3.7B",cat:"NRC 유일 SMR",q:2,v:3,desc:"현금 $841M",rsi:38,ytd:-55,vn:"고점 -79% 폭락. P/S 99배이나 NRC 유일 승인 가치",hi:41,lo:8,avg:20.5,f:{vo:10,va:2,si:3,mo:4,be:9,ou:6},nw:true},
+  {t:"NNE",n:"Nano Nuclear",sec:"nuclear",sub:"Micro Nuclear",p:24.58,ch:1.19,r:"Buy",an:60,tu:45,rg:0,eg:0,mc:"1.8B",cat:"ZEUS/ODIN",q:1,v:2,desc:"초소형 원자로",rsi:44,ytd:-32,vn:"매출 없는 초기 단계. 우주 원자력 테마",hi:55,lo:12,avg:35,f:{vo:10,va:2,si:2,mo:5,be:9,ou:6},nw:true},
+  {t:"DNN",n:"Denison Mines",sec:"nuclear",sub:"Mining",p:3.93,ch:1.29,r:"Buy",an:62,tu:40,rg:0,eg:0,mc:"3.5B",cat:"Athabasca",q:2,v:3,desc:"Phoenix 프로젝트",rsi:56,ytd:38,vn:"고품위 매장량 대비 저평가. 개발 리스크 할인",hi:5.5,lo:1.5,avg:4.2,f:{vo:8,va:5,si:3,mo:6,be:8,ou:7},nw:true},
+  {t:"UUUU",n:"Energy Fuels",sec:"nuclear",sub:"Uranium+REE",p:20.91,ch:-0.43,r:"Buy",an:64,tu:35,rg:45,eg:80,mc:"3.4B",cat:"통합 생산",q:2,v:3,desc:"유일 통합",rsi:61,ytd:52,vn:"희토류 가치 미반영",hi:30,lo:8,avg:22,f:{vo:8,va:5,si:3,mo:6,be:8,ou:7},nw:true},
+  {t:"URA",n:"Global X Uranium",sec:"nuclear",sub:"ETF",p:55.27,ch:0.78,r:"ETF",an:0,tu:0,rg:0,eg:0,mc:"4.2B",cat:"대표 ETF",q:0,v:0,desc:"분산",rsi:54,ytd:30,vn:"",hi:0,lo:0,avg:0,f:{vo:6,va:5,si:5,mo:6,be:6,ou:7},nw:true},
+  {t:"URNM",n:"Sprott Uranium",sec:"nuclear",sub:"ETF",p:69.42,ch:0.76,r:"ETF",an:0,tu:0,rg:0,eg:0,mc:"2.1B",cat:"채굴 ETF",q:0,v:0,desc:"실물+채굴",rsi:55,ytd:32,vn:"",hi:0,lo:0,avg:0,f:{vo:7,va:5,si:4,mo:6,be:7,ou:7},nw:true},
+  {t:"GEV",n:"GE Vernova",sec:"power",sub:"Gas Turbines",p:978.15,ch:-0.79,r:"Buy",an:78,tu:18,rg:14,eg:82,mc:"268B",cat:"전력장비 1위",q:3,v:1,desc:"백로그 $200B",rsi:72,ytd:65,vn:"EPS 82% 성장에도 과매수 영역. 단기 조정 가능",hi:1200,lo:600,avg:950,f:{vo:6,va:6,si:9,mo:8,be:5,ou:9},nw:false},
+  {t:"BE",n:"Bloom Energy",sec:"power",sub:"Fuel Cells",p:209.97,ch:-1.81,r:"Buy",an:65,tu:22,rg:58,eg:140,mc:"47.5B",cat:"$20B 백로그",q:3,v:1,desc:"SOFC 발전",rsi:68,ytd:180,vn:"YTD +180% 과열. 매출 58% 성장이 뒷받침",hi:300,lo:100,avg:265,f:{vo:8,va:4,si:6,mo:9,be:8,ou:8},nw:false},
+  {t:"WULF",n:"TeraWulf",sec:"power",sub:"AI DC",p:19.31,ch:-1.86,r:"Buy",an:65,tu:45,rg:200,eg:0,mc:"6.8B",cat:"HPC 50%+",q:2,v:2,desc:"BTC→AI 전환",rsi:58,ytd:755,vn:"YTD +755%. 유증 희석 vs DC 성장",hi:28,lo:8,avg:22,f:{vo:9,va:3,si:3,mo:8,be:9,ou:7},nw:true},
+  {t:"NBIS",n:"Nebius Group",sec:"power",sub:"GPU Cloud",p:165.26,ch:-0.91,r:"Buy",an:70,tu:45,rg:830,eg:0,mc:"37.5B",cat:"+830%",q:3,v:2,desc:"매출 830%",rsi:64,ytd:320,vn:"830% 성장이나 적자. 속도가 밸류 정당화",hi:250,lo:50,avg:200,f:{vo:9,va:3,si:5,mo:9,be:9,ou:8},nw:false},
+  {t:"APD",n:"Air Products",sec:"power",sub:"Industrial Gas",p:297.26,ch:0.69,r:"Hold",an:58,tu:8,rg:5,eg:8,mc:"66B",cat:"수소경제",q:2,v:2,desc:"가스 3위",rsi:47,ytd:5,vn:"방어주. 성장 제한적이나 배당 안정",hi:340,lo:250,avg:310,f:{vo:3,va:7,si:8,mo:4,be:3,ou:5},nw:true},
+  {t:"LIN",n:"Linde PLC",sec:"power",sub:"Industrial Gas",p:499.08,ch:0.23,r:"Buy",an:72,tu:10,rg:6,eg:12,mc:"238B",cat:"가스 1위",q:3,v:1,desc:"글로벌 1위",rsi:50,ytd:8,vn:"적정가. 프리미엄 합당하나 상승여력 제한",hi:560,lo:420,avg:530,f:{vo:2,va:7,si:9,mo:5,be:2,ou:6},nw:true},
+  {t:"LITE",n:"Lumentum",sec:"photonics",sub:"Lasers",p:827,ch:0,r:"Strong Buy",an:85,tu:15,rg:77,eg:6700,mc:"54B",cat:"NVIDIA $2B",q:3,v:1,desc:"광학 핵심",rsi:74,ytd:95,vn:"RSI 74 과매수. NVIDIA+S&P 편입 소화 중",hi:1000,lo:400,avg:750,f:{vo:8,va:4,si:7,mo:9,be:8,ou:9},nw:false},
+  {t:"COHR",n:"Coherent",sec:"photonics",sub:"Modules",p:0,ch:0,r:"Strong Buy",an:82,tu:20,rg:15,eg:45,mc:"25B",cat:"NVIDIA $2B",q:3,v:2,desc:"실리콘 포토닉스",rsi:66,ytd:93,vn:"35x P/E 합리적",hi:0,lo:0,avg:0,f:{vo:7,va:5,si:6,mo:8,be:7,ou:9},nw:false},
+  {t:"MRVL",n:"Marvell",sec:"photonics",sub:"Custom Si",p:0,ch:0,r:"Buy",an:78,tu:22,rg:25,eg:40,mc:"95B",cat:"Celestial AI",q:3,v:2,desc:"AI칩+광학",rsi:52,ytd:15,vn:"인수 시너지 미반영",hi:0,lo:0,avg:0,f:{vo:7,va:5,si:8,mo:7,be:7,ou:8},nw:false},
+  {t:"FN",n:"Fabrinet",sec:"photonics",sub:"Mfg",p:0,ch:0,r:"Buy",an:72,tu:18,rg:20,eg:25,mc:"16B",cat:"광학 EMS",q:2,v:2,desc:"계약제조",rsi:50,ytd:18,vn:"안정적",hi:0,lo:0,avg:0,f:{vo:6,va:6,si:5,mo:7,be:6,ou:7},nw:false},
+  {t:"MTSI",n:"MACOM",sec:"photonics",sub:"Analog",p:0,ch:0,r:"Buy",an:70,tu:28,rg:22,eg:35,mc:"17B",cat:"하이브리드",q:2,v:2,desc:"아날로그+광학",rsi:63,ytd:39,vn:"랠리 후 밸류 부담",hi:0,lo:0,avg:0,f:{vo:7,va:5,si:5,mo:8,be:7,ou:8},nw:false},
+  {t:"MKSI",n:"MKS Instruments",sec:"photonics",sub:"Equip",p:0,ch:0,r:"Buy",an:68,tu:15,rg:12,eg:24,mc:"17B",cat:"장비",q:2,v:2,desc:"계측",rsi:48,ytd:10,vn:"적정가",hi:0,lo:0,avg:0,f:{vo:6,va:6,si:5,mo:6,be:6,ou:7},nw:false},
+  {t:"IPGP",n:"IPG Photonics",sec:"photonics",sub:"Lasers",p:0,ch:0,r:"Buy",an:62,tu:30,rg:10,eg:18,mc:"6B",cat:"EV 리쇼어링",q:2,v:3,desc:"레이저 1위",rsi:56,ytd:59,vn:"특허 소송 후 저가 매수 기회",hi:0,lo:0,avg:0,f:{vo:7,va:5,si:4,mo:7,be:7,ou:6},nw:false},
+  {t:"AAOI",n:"Applied Opto",sec:"photonics",sub:"Transceivers",p:0,ch:0,r:"Buy",an:60,tu:35,rg:40,eg:120,mc:"4B",cat:"400G/800G",q:2,v:3,desc:"트랜시버",rsi:59,ytd:42,vn:"수요 폭발이 프리미엄 정당화",hi:0,lo:0,avg:0,f:{vo:9,va:4,si:3,mo:8,be:9,ou:7},nw:false},
+  {t:"NVDA",n:"NVIDIA",sec:"infra",sub:"GPU",p:199.81,ch:0,r:"Strong Buy",an:92,tu:15,rg:55,eg:60,mc:"4870B",cat:"Rubin H2 2026",q:3,v:1,desc:"GPU 절대 강자",rsi:56,ytd:12,vn:"$4.87T. Rubin+$3-4T 전망이 밸류 지지",hi:250,lo:130,avg:210,f:{vo:7,va:5,si:10,mo:8,be:7,ou:10},nw:false},
+  {t:"INTC",n:"Intel",sec:"infra",sub:"CPU",p:68.49,ch:5.47,r:"Hold",an:55,tu:12,rg:8,eg:45,mc:"296B",cat:"18A 파운드리",q:2,v:2,desc:"파운드리 분사",rsi:71,ytd:120,vn:"+120% 급등 RSI 71 과매수. 기대감 선반영",hi:85,lo:25,avg:55,f:{vo:7,va:7,si:9,mo:7,be:6,ou:6},nw:true},
+  {t:"ORCL",n:"Oracle",sec:"infra",sub:"Cloud",p:178.36,ch:5.04,r:"Buy",an:75,tu:20,rg:15,eg:22,mc:"498B",cat:"OpenAI $30B",q:3,v:2,desc:"AI 클라우드",rsi:42,ytd:-18,vn:"고점 -45%. OpenAI 계약 대비 과매도",hi:350,lo:140,avg:250,f:{vo:7,va:5,si:9,mo:7,be:6,ou:8},nw:true},
+  {t:"AVGO",n:"Broadcom",sec:"infra",sub:"Networking",p:402.47,ch:0,r:"Strong Buy",an:88,tu:18,rg:22,eg:30,mc:"934B",cat:"맞춤 AI칩",q:3,v:2,desc:"커스텀 AI칩",rsi:62,ytd:28,vn:"Meta 딜로 추가 상승. VMware 안정화",hi:500,lo:200,avg:420,f:{vo:6,va:6,si:9,mo:8,be:6,ou:9},nw:false},
+  {t:"VRT",n:"Vertiv",sec:"infra",sub:"Cooling",p:0,ch:0,r:"Buy",an:80,tu:25,rg:34,eg:47,mc:"72B",cat:"Rubin 냉각",q:3,v:2,desc:"DC 냉각",rsi:58,ytd:22,vn:"252% 주문이 밸류 뒷받침",hi:0,lo:0,avg:0,f:{vo:7,va:5,si:7,mo:8,be:7,ou:9},nw:false},
+  {t:"APH",n:"Amphenol",sec:"infra",sub:"Connectors",p:0,ch:0,r:"Buy",an:76,tu:16,rg:20,eg:28,mc:"110B",cat:"DC 33%",q:3,v:1,desc:"커넥터 1위",rsi:54,ytd:15,vn:"안정적 프리미엄",hi:0,lo:0,avg:0,f:{vo:4,va:6,si:8,mo:7,be:4,ou:8},nw:false},
+  {t:"DELL",n:"Dell Tech",sec:"infra",sub:"Servers",p:0,ch:0,r:"Buy",an:74,tu:20,rg:19,eg:27,mc:"100B",cat:"AI $64B",q:2,v:2,desc:"서버 1위",rsi:50,ytd:10,vn:"저마진 우려. 백로그 $43B 안전판",hi:0,lo:0,avg:0,f:{vo:6,va:7,si:8,mo:7,be:6,ou:8},nw:false},
+  {t:"CRDO",n:"Credo Tech",sec:"infra",sub:"Cables",p:0,ch:0,r:"Buy",an:72,tu:30,rg:200,eg:300,mc:"18B",cat:"3x→$406M",q:3,v:2,desc:"AEC 혁신",rsi:65,ytd:85,vn:"소수 고객 의존 리스크",hi:0,lo:0,avg:0,f:{vo:9,va:3,si:4,mo:9,be:9,ou:8},nw:false},
+  {t:"EME",n:"EMCOR",sec:"infra",sub:"Construction",p:0,ch:0,r:"Buy",an:68,tu:15,rg:18,eg:22,mc:"28B",cat:"DC 건설",q:2,v:2,desc:"DC 건설",rsi:52,ytd:18,vn:"적정. 구조적 성장",hi:0,lo:0,avg:0,f:{vo:5,va:6,si:6,mo:7,be:5,ou:7},nw:false},
+  {t:"FCX",n:"Freeport-McMoRan",sec:"materials",sub:"Copper",p:68.28,ch:-0.61,r:"Buy",an:74,tu:18,rg:12,eg:25,mc:"97B",cat:"구리 최대",q:3,v:2,desc:"Grasberg",rsi:60,ytd:30,vn:"AI 전력망이 추가 수요 드라이버",hi:85,lo:40,avg:70,f:{vo:7,va:6,si:8,mo:6,be:7,ou:7},nw:true},
+  {t:"SCCO",n:"Southern Copper",sec:"materials",sub:"Copper",p:188.24,ch:-0.56,r:"Buy",an:65,tu:12,rg:10,eg:18,mc:"145B",cat:"고배당",q:3,v:1,desc:"고배당",rsi:48,ytd:15,vn:"배당+성장 조합",hi:230,lo:100,avg:195,f:{vo:5,va:6,si:8,mo:5,be:5,ou:6},nw:true},
+  {t:"LAC",n:"Lithium Americas",sec:"materials",sub:"Lithium",p:4.87,ch:6.80,r:"Buy",an:60,tu:55,rg:0,eg:0,mc:"1.1B",cat:"Thacker Pass",q:1,v:3,desc:"미국 최대 리튬",rsi:42,ytd:-28,vn:"리튬 바닥권. 멀티배거 가능",hi:10,lo:2.5,avg:7,f:{vo:10,va:3,si:2,mo:5,be:9,ou:6},nw:true},
+  {t:"BHP",n:"BHP Group",sec:"materials",sub:"Diversified",p:79.47,ch:-0.01,r:"Hold",an:62,tu:8,rg:4,eg:6,mc:"401B",cat:"최대 광산",q:3,v:2,desc:"안정 배당",rsi:46,ytd:8,vn:"방어주",hi:90,lo:50,avg:75,f:{vo:4,va:7,si:10,mo:4,be:4,ou:5},nw:true},
+  {t:"SBSW",n:"Sibanye Stillwater",sec:"materials",sub:"PGM",p:13.09,ch:-0.76,r:"Hold",an:48,tu:20,rg:8,eg:0,mc:"9.3B",cat:"수소 소재",q:1,v:2,desc:"PGM",rsi:35,ytd:-22,vn:"과매도 구간. 수소경제 전환 시 반등",hi:22,lo:5,avg:14,f:{vo:9,va:5,si:4,mo:5,be:8,ou:5},nw:true},
+  {t:"VAL",n:"Valaris",sec:"materials",sub:"Drilling",p:94.60,ch:3.20,r:"Buy",an:68,tu:25,rg:12,eg:30,mc:"7B",cat:"시추 1위",q:2,v:3,desc:"가스 탐사",rsi:67,ytd:48,vn:"사이클 정점 우려. AI 에너지 수요가 연장",hi:120,lo:40,avg:100,f:{vo:8,va:6,si:4,mo:6,be:8,ou:6},nw:true},
+  {t:"XPRO",n:"Expro Group",sec:"materials",sub:"Services",p:16.11,ch:-0.31,r:"Hold",an:55,tu:35,rg:5,eg:10,mc:"1.8B",cat:"해저 서비스",q:1,v:3,desc:"에너지 서비스",rsi:40,ytd:-15,vn:"저성장이나 저평가",hi:25,lo:10,avg:20,f:{vo:7,va:5,si:3,mo:4,be:7,ou:5},nw:true},
+  {t:"PALL",n:"abrdn Palladium",sec:"materials",sub:"ETF",p:141.58,ch:-0.90,r:"ETF",an:0,tu:0,rg:0,eg:0,mc:"0.5B",cat:"팔라듐",q:0,v:0,desc:"실물",rsi:43,ytd:-8,vn:"",hi:0,lo:0,avg:0,f:{vo:7,va:5,si:2,mo:4,be:6,ou:5},nw:true},
+];
 
-  <script type="text/babel">
-    const { useState, useMemo, useEffect, useCallback, useRef } = React;
+const SM={
+  nuclear:{label:"Nuclear",icon:"☢️",color:"#00E5A0",cd:"rgba(0,229,160,0.12)",desc:"핵분열·우라늄 — AI DC 기저전력"},
+  power:{label:"AI Power",icon:"⚡",color:"#FFD93D",cd:"rgba(255,217,61,0.12)",desc:"연료전지·가스터빈·산업가스"},
+  photonics:{label:"Photonics",icon:"🔬",color:"#7B61FF",cd:"rgba(123,97,255,0.12)",desc:"레이저·광학·포토닉스"},
+  infra:{label:"AI Infra",icon:"🏗️",color:"#FF6B35",cd:"rgba(255,107,53,0.12)",desc:"GPU·서버·냉각·네트워킹"},
+  materials:{label:"Materials",icon:"⛏️",color:"#4ECDC4",cd:"rgba(78,205,196,0.12)",desc:"구리·리튬·에너지 서비스"},
+  heatmap:{label:"Heatmap",icon:"🗺️",color:"#FF61DC",cd:"rgba(255,97,220,0.12)",desc:"시총 × 등락률 히트맵"},
+  matrix:{label:"Matrix",icon:"🎯",color:"#00E5FF",cd:"rgba(0,229,255,0.12)",desc:"Quality × Valuation"},
+  perf:{label:"Performance",icon:"📈",color:"#F97316",cd:"rgba(249,115,22,0.12)",desc:"위너 & 루저 비교"},
+  sa:{label:"SA LP",icon:"🧠",color:"#a78bfa",cd:"rgba(167,139,250,0.12)",desc:"Situational Awareness LP — Leopold Aschenbrenner 13F"},
+  news:{label:"News",icon:"📰",color:"#38BDF8",cd:"rgba(56,189,248,0.12)",desc:"종목별 최신 뉴스"},
+};
 
-    function parseMcaps(s){
-      if(!s) return 0;
-      const n = parseFloat(String(s).replace(/[^0-9.]/g,'')) || 0;
-      if(String(s).includes('T')) return n * 1000;
-      if(String(s).includes('B')) return n;
-      if(String(s).includes('M')) return n / 1000;
-      return n;
-    }
+const MA={
+  "3-3":{l:"Strong Buy",s:"Jackpot",c:"#00E5A0",bg:"rgba(0,229,160,0.08)"},
+  "3-2":{l:"Buy",s:"",c:"#10b981",bg:"rgba(16,185,129,0.06)"},
+  "3-1":{l:"Patience",s:"Wait",c:"#f59e0b",bg:"rgba(245,158,11,0.06)"},
+  "2-3":{l:"Buy",s:"",c:"#10b981",bg:"rgba(16,185,129,0.06)"},
+  "2-2":{l:"Hold",s:"",c:"#a78bfa",bg:"rgba(167,139,250,0.06)"},
+  "2-1":{l:"Avoid",s:"",c:"#ef4444",bg:"rgba(239,68,68,0.05)"},
+  "1-3":{l:"Speculative",s:"",c:"#f59e0b",bg:"rgba(245,158,11,0.05)"},
+  "1-2":{l:"Avoid",s:"",c:"#ef4444",bg:"rgba(239,68,68,0.05)"},
+  "1-1":{l:"Avoid",s:"Worst",c:"#ef4444",bg:"rgba(239,68,68,0.08)"},
+};
 
-    const initS = [
-      { t:'CEG',n:'Constellation Energy',sec:'nuclear',sub:'Nuclear Power',p:299.13,ch:1.49,r:'Buy',an:72,tu:12,rg:8,eg:13,mc:'101.9B',cat:'TMI · Meta power angle',q:3,v:1,desc:'Large-scale nuclear generation exposure tied to AI electricity demand.',rsi:58,ytd:22,vn:'TMI restart optionality.',hi:432.78,lo:138,avg:264.95,fvo:6,va:5,si:9,mo:7,be:6,ou:8,nw:false },
-      { t:'CCJ',n:'Cameco Corp',sec:'nuclear',sub:'Uranium Mining',p:120.25,ch:0.96,r:'Buy',an:74,tu:25,rg:30,eg:55,mc:'52.8B',cat:'Westinghouse / fuel cycle',q:3,v:2,desc:'Leading uranium and fuel-cycle name with leverage to nuclear restocking.',rsi:55,ytd:35,vn:'Westinghouse angle.',hi:180,lo:75,avg:150,fvo:7,va:6,si:8,mo:7,be:7,ou:8,nw:false },
-      { t:'OKLO',n:'Oklo Inc',sec:'nuclear',sub:'Advanced Nuclear',p:64.20,ch:1.34,r:'Buy',an:70,tu:80,rg:0,eg:0,mc:'16.2B',cat:'Advanced reactor optionality',q:2,v:2,desc:'High-beta advanced reactor optionality with strong narrative and execution risk.',rsi:48,ytd:-15,vn:'Early-stage and narrative heavy.',hi:120,lo:30,avg:90,fvo:9,va:3,si:4,mo:6,be:9,ou:7,nw:false },
-      { t:'LEU',n:'Centrus Energy',sec:'nuclear',sub:'Enrichment',p:202.16,ch:2.21,r:'Buy',an:65,tu:30,rg:15,eg:25,mc:'3.2B',cat:'HALEU bottleneck',q:3,v:2,desc:'Strategic enrichment and HALEU exposure for next-gen nuclear supply chain.',rsi:52,ytd:-8,vn:'HALEU bottleneck exposure.',hi:350,lo:100,avg:265,fvo:9,va:4,si:3,mo:5,be:8,ou:7,nw:true },
-      { t:'UEC',n:'Uranium Energy',sec:'nuclear',sub:'Mining',p:15.13,ch:2.09,r:'Buy',an:68,tu:35,rg:120,eg:0,mc:'6.1B',cat:'ISR uranium torque',q:2,v:3,desc:'Higher-beta uranium mining name with operating leverage to spot sentiment.',rsi:62,ytd:45,vn:'Good torque to uranium sentiment.',hi:22,lo:8,avg:17,fvo:8,va:5,si:4,mo:6,be:8,ou:7,nw:true },
-      { t:'SMR',n:'NuScale Power',sec:'nuclear',sub:'SMR',p:11.41,ch:-2.56,r:'Hold',an:50,tu:80,rg:325,eg:0,mc:'3.7B',cat:'NRC / commercialization',q:2,v:3,desc:'Commercial SMR platform with large optionality and meaningful execution risk.',rsi:38,ytd:-55,vn:'Narrative-rich, cash-flow-poor.',hi:41,lo:8,avg:20.5,fvo:10,va:2,si:3,mo:4,be:9,ou:6,nw:true },
-      { t:'NNE',n:'Nano Nuclear',sec:'nuclear',sub:'Micro Nuclear',p:24.58,ch:1.19,r:'Buy',an:60,tu:45,rg:0,eg:0,mc:'1.8B',cat:'ZEUS / ODIN',q:1,v:2,desc:'Highly speculative micro-reactor optionality with narrative beta.',rsi:44,ytd:-32,vn:'Tiny-cap narrative trade.',hi:55,lo:12,avg:35,fvo:10,va:2,si:2,mo:5,be:9,ou:6,nw:true },
-      { t:'DNN',n:'Denison Mines',sec:'nuclear',sub:'Mining',p:3.93,ch:1.29,r:'Buy',an:62,tu:40,rg:0,eg:0,mc:'3.5B',cat:'Athabasca optionality',q:2,v:3,desc:'Uranium development and optionality play.',rsi:56,ytd:38,vn:'Phoenix optionality.',hi:5.5,lo:1.5,avg:4.2,fvo:8,va:5,si:3,mo:6,be:8,ou:7,nw:true },
-      { t:'UUUU',n:'Energy Fuels',sec:'nuclear',sub:'Uranium / REE',p:20.91,ch:-0.43,r:'Buy',an:64,tu:35,rg:45,eg:80,mc:'3.4B',cat:'Uranium + REE',q:2,v:3,desc:'Dual exposure to uranium and rare earth strategic themes.',rsi:61,ytd:52,vn:'Cross-theme strategic materials angle.',hi:30,lo:8,avg:22,fvo:8,va:5,si:3,mo:6,be:8,ou:7,nw:true },
-      { t:'URA',n:'Global X Uranium ETF',sec:'nuclear',sub:'ETF',p:55.27,ch:0.78,r:'ETF',an:0,tu:0,rg:0,eg:0,mc:'4.2B',cat:'Uranium basket',q:0,v:0,desc:'Basket exposure across uranium and nuclear equities.',rsi:54,ytd:30,vn:'Diversified uranium exposure.',hi:0,lo:0,avg:0,fvo:6,va:5,si:5,mo:6,be:6,ou:7,nw:true },
-      { t:'URNM',n:'Sprott Uranium Miners ETF',sec:'nuclear',sub:'ETF',p:69.42,ch:0.76,r:'ETF',an:0,tu:0,rg:0,eg:0,mc:'2.1B',cat:'Miners basket',q:0,v:0,desc:'Mining-heavy uranium ETF exposure.',rsi:55,ytd:32,vn:'Cleaner miners basket.',hi:0,lo:0,avg:0,fvo:7,va:5,si:4,mo:6,be:7,ou:7,nw:true },
+// ── Finnhub helpers ──
+async function fhQuote(sym,key){try{const r=await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${key}`);if(!r.ok)return null;const d=await r.json();if(!d||d.c===0)return null;return{price:d.c,change:d.d,changePct:d.dp}}catch{return null}}
+async function fhNews(sym,key){try{const to=new Date().toISOString().slice(0,10);const fr=new Date(Date.now()-7*86400000).toISOString().slice(0,10);const r=await fetch(`https://finnhub.io/api/v1/company-news?symbol=${sym}&from=${fr}&to=${to}&token=${key}`);if(!r.ok)return[];return(await r.json()).slice(0,8)}catch{return[]}}
+function delay(ms){return new Promise(r=>setTimeout(r,ms))}
 
-      { t:'GEV',n:'GE Vernova',sec:'power',sub:'Gas Turbines',p:978.15,ch:-0.79,r:'Buy',an:78,tu:18,rg:14,eg:82,mc:'268B',cat:'Grid + turbine scarcity',q:3,v:1,desc:'Power equipment and turbine scarcity beneficiary as AI load grows.',rsi:72,ytd:65,vn:'Clean AI power buildout pick.',hi:1200,lo:600,avg:950,fvo:6,va:6,si:9,mo:8,be:5,ou:9,nw:false },
-      { t:'BE',n:'Bloom Energy',sec:'power',sub:'Fuel Cells',p:209.97,ch:-1.81,r:'Buy',an:65,tu:22,rg:58,eg:140,mc:'47.5B',cat:'On-site power',q:3,v:1,desc:'Behind-the-meter solid oxide power story tied to data-center demand.',rsi:68,ytd:180,vn:'Grid bottleneck beneficiary.',hi:300,lo:100,avg:265,fvo:8,va:4,si:6,mo:9,be:8,ou:8,nw:false },
-      { t:'WULF',n:'TeraWulf',sec:'power',sub:'AI DC',p:19.31,ch:-1.86,r:'Buy',an:65,tu:45,rg:200,eg:0,mc:'6.8B',cat:'AI hosting torque',q:2,v:2,desc:'Power + compute hosting concept with very high narrative torque.',rsi:58,ytd:755,vn:'Explosive but fragile.',hi:28,lo:8,avg:22,fvo:9,va:3,si:3,mo:8,be:9,ou:7,nw:true },
-      { t:'NBIS',n:'Nebius Group',sec:'power',sub:'GPU Cloud',p:165.26,ch:-0.91,r:'Buy',an:70,tu:45,rg:830,eg:0,mc:'37.5B',cat:'GPU cloud growth',q:3,v:2,desc:'High-growth GPU cloud exposure tied to AI infrastructure demand.',rsi:64,ytd:320,vn:'Growth-heavy AI demand proxy.',hi:250,lo:50,avg:200,fvo:9,va:3,si:5,mo:9,be:9,ou:8,nw:false },
-      { t:'APD',n:'Air Products',sec:'power',sub:'Industrial Gas',p:297.26,ch:0.69,r:'Hold',an:58,tu:8,rg:5,eg:8,mc:'66B',cat:'Industrial gas',q:2,v:2,desc:'Lower-beta industrial gas exposure with some data-center adjacency.',rsi:47,ytd:5,vn:'Defensive relative to pure AI names.',hi:340,lo:250,avg:310,fvo:3,va:7,si:8,mo:4,be:3,ou:5,nw:true },
-      { t:'LIN',n:'Linde PLC',sec:'power',sub:'Industrial Gas',p:499.08,ch:0.23,r:'Buy',an:72,tu:10,rg:6,eg:12,mc:'238B',cat:'Scaled industrial gas leader',q:3,v:1,desc:'Quality industrial gas leader with broad infrastructure relevance.',rsi:50,ytd:8,vn:'Steadier quality compounder.',hi:560,lo:420,avg:530,fvo:2,va:7,si:9,mo:5,be:2,ou:6,nw:true },
+// ── Shared components ──
+function RsiBadge({rsi}){if(!rsi)return null;const ob=rsi>=70,os=rsi<=30,hot=rsi>=60,cold=rsi<=40;const c=ob?"#FF6B6B":os?"#00E5A0":hot?"#FFD93D":cold?"#4ECDC4":"#6B7280";const l=ob?"과매수":os?"과매도":hot?"강세":cold?"약세":"중립";return <span style={{fontSize:"10px",padding:"2px 6px",borderRadius:"4px",background:c+"18",color:c,border:`1px solid ${c}30`,fontWeight:600}}>RSI {rsi} {l}</span>}
+function Bar({val,mx,c,lb}){return <div style={{marginBottom:"5px"}}><div style={{display:"flex",justifyContent:"space-between",fontSize:"11px",color:"#8A8F98",marginBottom:"2px"}}><span>{lb}</span><span style={{color:val>0?c:val===0?"#555":"#FF6B6B",fontWeight:600,fontFamily:"monospace"}}>{val>0?`+${val}%`:val===0?"—":`${val}%`}</span></div><div style={{height:"4px",background:"rgba(255,255,255,0.04)",borderRadius:"2px"}}><div style={{height:"100%",width:`${Math.min((Math.abs(val)/mx)*100,100)}%`,borderRadius:"2px",background:`linear-gradient(90deg,${c}88,${c})`}}/></div></div>}
+function Radar({f,color}){const lb=["변동성","밸류","사이즈","모멘텀","베타","전망"],ks=["vo","va","si","mo","be","ou"],cx=90,cy=90,r=65;const an=ks.map((_,i)=>(Math.PI*2*i)/ks.length-Math.PI/2);const pts=ks.map((k,i)=>({x:cx+Math.cos(an[i])*r*((f[k]||5)/10),y:cy+Math.sin(an[i])*r*((f[k]||5)/10)}));return <svg viewBox="0 0 180 180" style={{width:"100%",maxWidth:"200px"}}>{[.25,.5,.75,1].map((lv,li)=><polygon key={li} points={an.map(a=>`${cx+Math.cos(a)*r*lv},${cy+Math.sin(a)*r*lv}`).join(" ")} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth=".5"/>)}{an.map((a,i)=><g key={i}><line x1={cx} y1={cy} x2={cx+Math.cos(a)*r} y2={cy+Math.sin(a)*r} stroke="rgba(255,255,255,0.06)" strokeWidth=".5"/><text x={cx+Math.cos(a)*(r+16)} y={cy+Math.sin(a)*(r+16)} fill="#8A8F98" fontSize="8" textAnchor="middle" dominantBaseline="middle">{lb[i]}</text></g>)}<polygon points={pts.map(p=>`${p.x},${p.y}`).join(" ")} fill={color+"25"} stroke={color} strokeWidth="1.5"/></svg>}
+function TChart({s,color}){if(!s.hi||!s.lo)return null;const mn=s.lo*.85,mx=s.hi*1.08,rng=mx-mn,y=val=>100-((val-mn)/rng)*100;return <svg viewBox="0 0 220 120" style={{width:"100%",maxWidth:"240px"}}><line x1="30" y1={y(s.p)*1.1+5} x2="200" y2={y(s.p)*1.1+5} stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>{[[s.hi,"#00E5A0","최고"],[s.avg,"#FFD93D","평균"],[s.lo,"#FF6B6B","최저"]].map(([val,cl,lb],i)=><g key={i}><line x1="90" y1={y(s.p)*1.1+5} x2="190" y2={y(val)*1.1+5} stroke={cl} strokeWidth="1" strokeDasharray="4,2"/><text x="195" y={y(val)*1.1+4} fill={cl} fontSize="8" fontWeight="700">{lb}</text><text x="195" y={y(val)*1.1+13} fill={cl} fontSize="9" fontFamily="monospace">${val}</text><circle cx="190" cy={y(val)*1.1+5} r="3" fill={cl}/></g>)}<text x="35" y={y(s.p)*1.1+3} fill="#fff" fontSize="8">현재가</text><text x="35" y={y(s.p)*1.1+14} fill="#fff" fontSize="10" fontWeight="700" fontFamily="monospace">${s.p}</text><circle cx="90" cy={y(s.p)*1.1+5} r="3" fill="#fff"/></svg>}
 
-      { t:'LITE',n:'Lumentum',sec:'photonics',sub:'Lasers',p:82.70,ch:0.00,r:'Strong Buy',an:85,tu:15,rg:77,eg:6700,mc:'54B',cat:'Optics demand inflection',q:3,v:1,desc:'Photonics leverage to AI interconnect and bandwidth density.',rsi:74,ytd:95,vn:'Sensitive to AI optical capex.',hi:100,lo:40,avg:75,fvo:8,va:4,si:7,mo:9,be:8,ou:9,nw:false },
-      { t:'COHR',n:'Coherent',sec:'photonics',sub:'Modules',p:79.80,ch:1.25,r:'Strong Buy',an:82,tu:20,rg:15,eg:45,mc:'25B',cat:'Optical modules',q:3,v:2,desc:'Broad optical platform with AI network capex tailwinds.',rsi:66,ytd:93,vn:'Good breadth plus AI relevance.',hi:95,lo:35,avg:68,fvo:7,va:5,si:6,mo:8,be:7,ou:9,nw:false },
-      { t:'MRVL',n:'Marvell',sec:'photonics',sub:'Custom Si',p:94.60,ch:0.84,r:'Buy',an:78,tu:22,rg:25,eg:40,mc:'95B',cat:'Custom silicon + optical adjacency',q:3,v:2,desc:'Custom AI silicon and networking beneficiary.',rsi:52,ytd:15,vn:'Broad AI infra relevance.',hi:120,lo:50,avg:85,fvo:7,va:5,si:8,mo:7,be:7,ou:8,nw:false },
-      { t:'FN',n:'Fabrinet',sec:'photonics',sub:'Mfg',p:242.20,ch:0.40,r:'Buy',an:72,tu:18,rg:20,eg:25,mc:'16B',cat:'Optical manufacturing partner',q:2,v:2,desc:'Manufacturing leverage to optical content growth.',rsi:50,ytd:18,vn:'Picks-and-shovels photonics exposure.',hi:280,lo:120,avg:220,fvo:6,va:6,si:5,mo:7,be:6,ou:7,nw:false },
-      { t:'MTSI',n:'MACOM',sec:'photonics',sub:'Analog',p:126.20,ch:0.55,r:'Buy',an:70,tu:28,rg:22,eg:35,mc:'17B',cat:'Analog + bandwidth upgrades',q:2,v:2,desc:'Analog and optical exposure benefitting from bandwidth upgrades.',rsi:63,ytd:39,vn:'Good tactical name.',hi:140,lo:60,avg:110,fvo:7,va:5,si:5,mo:8,be:7,ou:8,nw:false },
-      { t:'MKSI',n:'MKS Instruments',sec:'photonics',sub:'Equip',p:131.10,ch:-0.22,r:'Buy',an:68,tu:15,rg:12,eg:24,mc:'17B',cat:'Semi + photonics equipment',q:2,v:2,desc:'Equipment supplier with some photonics and semi exposure.',rsi:48,ytd:10,vn:'Less pure-play, still cycle-relevant.',hi:155,lo:80,avg:125,fvo:6,va:6,si:5,mo:6,be:6,ou:7,nw:false },
-      { t:'IPGP',n:'IPG Photonics',sec:'photonics',sub:'Lasers',p:91.30,ch:0.31,r:'Buy',an:62,tu:30,rg:10,eg:18,mc:'6B',cat:'Laser platform',q:2,v:3,desc:'Laser exposure with AI adjacency and industrial crossover.',rsi:56,ytd:59,vn:'Mixed demand picture.',hi:120,lo:55,avg:88,fvo:7,va:5,si:4,mo:7,be:7,ou:6,nw:false },
-      { t:'AAOI',n:'Applied Optoelectronics',sec:'photonics',sub:'Transceivers',p:42.10,ch:2.20,r:'Buy',an:60,tu:35,rg:40,eg:120,mc:'4B',cat:'400G / 800G torque',q:2,v:3,desc:'High-beta transceiver name leveraged to AI networking demand.',rsi:59,ytd:42,vn:'Tactical upside, higher risk.',hi:60,lo:12,avg:33,fvo:9,va:4,si:3,mo:8,be:9,ou:7,nw:false },
+function Card({s,sc,i}){const[ex,setEx]=useState(false);const etf=s.r==="ETF";const rc=s.r.includes("Strong")?"#00E5A0":s.r==="Buy"?"#5EDFB0":etf?"#4ECDC4":"#E5C84C";return <div style={{background:"rgba(255,255,255,0.018)",border:"1px solid rgba(255,255,255,0.05)",borderRadius:"14px",padding:"18px",animation:`fi .3s ease ${i*.03}s both`,position:"relative",cursor:"pointer"}} onClick={()=>setEx(!ex)}>{s.nw&&<div style={{position:"absolute",top:"8px",right:"8px",background:"rgba(255,107,53,0.18)",borderRadius:"4px",padding:"2px 6px",fontSize:"9px",fontWeight:800,color:"#FF6B35"}}>NEW</div>}<div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}><div><div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}><span style={{fontSize:"20px",fontWeight:800,color:"#F0F0F0",fontFamily:"monospace"}}>{s.t}</span><span style={{padding:"3px 8px",borderRadius:"6px",fontSize:"11px",fontWeight:700,background:rc+"18",color:rc}}>{s.r}</span><RsiBadge rsi={s.rsi}/></div><div style={{fontSize:"13px",color:"#9CA3AF",marginTop:"3px"}}>{s.n}</div></div>{s.p>0&&<div style={{textAlign:"right"}}><div style={{fontSize:"18px",fontWeight:700,color:"#E5E7EB",fontFamily:"monospace"}}>${s.p<100?s.p.toFixed(2):s.p.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div style={{fontSize:"13px",fontWeight:600,fontFamily:"monospace",color:s.ch>0?"#00E5A0":s.ch<0?"#FF6B6B":"#6B7280"}}>{s.ch>0?"▲+":s.ch<0?"▼":""}{s.ch.toFixed(2)}%</div></div>}</div><div style={{display:"flex",gap:"6px",marginBottom:"10px",flexWrap:"wrap"}}><span style={{background:sc+"14",borderRadius:"5px",padding:"2px 8px",fontSize:"11px",color:sc,fontWeight:600}}>{s.sub}</span><span style={{background:"rgba(255,255,255,0.04)",borderRadius:"5px",padding:"2px 8px",fontSize:"11px",color:"#9CA3AF",fontFamily:"monospace"}}>시총 ${s.mc}</span>{s.ytd!==undefined&&<span style={{background:s.ytd>0?"rgba(0,229,160,0.08)":"rgba(255,107,107,0.08)",borderRadius:"5px",padding:"2px 8px",fontSize:"11px",color:s.ytd>0?"#00E5A0":"#FF6B6B",fontFamily:"monospace"}}>YTD {s.ytd>0?"+":""}{s.ytd}%</span>}</div>{!etf&&<><Bar val={s.tu} mx={100} c={sc} lb="목표 상승률"/><Bar val={s.rg} mx={200} c="#4ECDC4" lb="매출 성장"/><Bar val={s.eg} mx={200} c="#FFD93D" lb="EPS 성장"/><div style={{display:"flex",alignItems:"center",gap:"5px",margin:"6px 0"}}><span style={{fontSize:"11px",color:"#6B7280"}}>신뢰</span><div style={{flex:1,display:"flex",gap:"1.5px"}}>{[...Array(10)].map((_,j)=><div key={j} style={{flex:1,height:"5px",borderRadius:"2px",background:j<Math.round(s.an/10)?sc:"rgba(255,255,255,0.04)"}}/>)}</div><span style={{fontSize:"11px",color:sc,fontWeight:700,fontFamily:"monospace"}}>{s.an}</span></div></>}<div style={{fontSize:"12px",color:"#9CA3AF",lineHeight:1.5,padding:"8px 10px",background:"rgba(255,255,255,0.015)",borderRadius:"7px",borderLeft:`2px solid ${sc}30`}}><span style={{color:sc,fontWeight:700,fontSize:"9px"}}>촉매 </span>{s.cat}</div>{ex&&<div style={{marginTop:"14px",padding:"16px",background:"rgba(0,0,0,0.3)",borderRadius:"12px",animation:"fi .25s ease both"}}><div style={{fontSize:"13px",color:"#D1D5DB",lineHeight:1.7,marginBottom:"12px"}}>{s.desc}</div>{s.vn&&<div style={{fontSize:"12px",color:"#E5C84C",lineHeight:1.6,padding:"8px 10px",background:"rgba(245,158,11,0.06)",borderRadius:"7px",marginBottom:"14px",borderLeft:"2px solid rgba(245,158,11,0.3)"}}>💡 {s.vn}</div>}{s.hi>0&&s.lo>0&&<div style={{display:"flex",flexWrap:"wrap",gap:"16px"}}><div style={{flex:"1 1 220px"}}><div style={{fontSize:"12px",color:"#6B7280",marginBottom:"8px"}}>📊 12개월 전망</div><TChart s={s} color={sc}/></div><div style={{flex:"1 1 180px"}}><div style={{fontSize:"12px",color:"#6B7280",marginBottom:"8px"}}>🕸️ 팩터</div><Radar f={s.f} color={sc}/></div></div>}</div>}<div style={{textAlign:"center",marginTop:"8px",fontSize:"10px",color:"#555"}}>{ex?"▲ 접기":"▼ 상세"}</div></div>}
 
-      { t:'NVDA',n:'NVIDIA',sec:'infra',sub:'GPU',p:199.81,ch:0.00,r:'Strong Buy',an:92,tu:15,rg:55,eg:60,mc:'4870B',cat:'AI compute anchor',q:3,v:1,desc:'Core AI compute leader and ecosystem benchmark.',rsi:56,ytd:12,vn:'Reference asset for AI compute capex.',hi:250,lo:130,avg:210,fvo:7,va:5,si:10,mo:8,be:7,ou:10,nw:false },
-      { t:'INTC',n:'Intel',sec:'infra',sub:'CPU',p:68.49,ch:5.47,r:'Hold',an:55,tu:12,rg:8,eg:45,mc:'296B',cat:'18A turnaround angle',q:2,v:2,desc:'Turnaround and foundry optionality with renewed AI relevance.',rsi:71,ytd:120,vn:'Momentum strong, execution debated.',hi:85,lo:25,avg:55,fvo:7,va:7,si:9,mo:7,be:6,ou:6,nw:true },
-      { t:'ORCL',n:'Oracle',sec:'infra',sub:'Cloud',p:178.36,ch:5.04,r:'Buy',an:75,tu:20,rg:15,eg:22,mc:'498B',cat:'Cloud + AI capacity',q:3,v:2,desc:'Cloud capacity and enterprise AI infrastructure beneficiary.',rsi:42,ytd:-18,vn:'Steadier AI infra expression.',hi:350,lo:140,avg:250,fvo:7,va:5,si:9,mo:7,be:6,ou:8,nw:true },
-      { t:'AVGO',n:'Broadcom',sec:'infra',sub:'Networking',p:402.47,ch:0.00,r:'Strong Buy',an:88,tu:18,rg:22,eg:30,mc:'934B',cat:'Networking + custom AI silicon',q:3,v:2,desc:'Critical connectivity and custom AI silicon exposure.',rsi:62,ytd:28,vn:'Major second-order AI infra winner.',hi:500,lo:200,avg:420,fvo:6,va:6,si:9,mo:8,be:6,ou:9,nw:false },
-      { t:'VRT',n:'Vertiv',sec:'infra',sub:'Cooling',p:114.40,ch:1.90,r:'Buy',an:80,tu:25,rg:34,eg:47,mc:'72B',cat:'Thermal bottleneck beneficiary',q:3,v:2,desc:'Cooling and power management beneficiary for AI data centers.',rsi:58,ytd:22,vn:'Strong picks-and-shovels AI DC exposure.',hi:140,lo:45,avg:100,fvo:7,va:5,si:7,mo:8,be:7,ou:9,nw:false },
-      { t:'APH',n:'Amphenol',sec:'infra',sub:'Connectors',p:145.80,ch:0.34,r:'Buy',an:76,tu:16,rg:20,eg:28,mc:'110B',cat:'Interconnect quality',q:3,v:1,desc:'Connector and interconnect supplier leveraged to data-center density.',rsi:54,ytd:15,vn:'Quality compounder inside infra.',hi:165,lo:90,avg:135,fvo:4,va:6,si:8,mo:7,be:4,ou:8,nw:false },
-      { t:'DELL',n:'Dell Tech',sec:'infra',sub:'Servers',p:139.20,ch:0.58,r:'Buy',an:74,tu:20,rg:19,eg:27,mc:'100B',cat:'AI server buildout',q:2,v:2,desc:'Server and enterprise infrastructure beneficiary of AI deployment.',rsi:50,ytd:10,vn:'Useful server exposure.',hi:170,lo:70,avg:128,fvo:6,va:7,si:8,mo:7,be:6,ou:8,nw:false },
-      { t:'CRDO',n:'Credo Tech',sec:'infra',sub:'Cables',p:88.40,ch:1.76,r:'Buy',an:72,tu:30,rg:200,eg:300,mc:'18B',cat:'AEC connectivity',q:3,v:2,desc:'Connectivity and AEC beneficiary in scale-out AI networking.',rsi:65,ytd:85,vn:'One of the purer scale-out networking trades.',hi:110,lo:28,avg:70,fvo:9,va:3,si:4,mo:9,be:9,ou:8,nw:false },
-      { t:'EME',n:'EMCOR',sec:'infra',sub:'Construction',p:412.70,ch:0.42,r:'Buy',an:68,tu:15,rg:18,eg:22,mc:'28B',cat:'Data-center build contractor',q:2,v:2,desc:'Construction and electrical infrastructure leverage to data-center capex.',rsi:52,ytd:18,vn:'Physical buildout exposure.',hi:480,lo:180,avg:360,fvo:5,va:6,si:6,mo:7,be:5,ou:7,nw:false },
+function WinnersBar({stocks}){const sorted=[...stocks].filter(s=>s.p>0).sort((a,b)=>b.ch-a.ch);const top3=sorted.slice(0,3);const bot3=sorted.slice(-3).reverse();const obList=stocks.filter(s=>s.rsi>=70);const osList=stocks.filter(s=>s.rsi<=35);return <div style={{padding:"16px 20px",borderBottom:"1px solid rgba(255,255,255,.06)",background:"rgba(255,255,255,0.015)"}}><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:"12px"}}><div style={{background:"rgba(0,229,160,0.06)",border:"1px solid rgba(0,229,160,0.15)",borderRadius:"12px",padding:"14px"}}><div style={{fontSize:"13px",color:"#6B7280",fontWeight:700,marginBottom:"8px"}}>🏆 오늘의 위너</div>{top3.map((s,i)=><div key={s.t} style={{display:"flex",justifyContent:"space-between",marginBottom:"5px"}}><div style={{display:"flex",alignItems:"center",gap:"6px"}}><span style={{fontSize:i===0?"18px":"14px",fontWeight:800,color:i===0?"#00E5A0":"#5EDFB0"}}>{i+1}</span><span style={{fontSize:i===0?"20px":"16px",fontWeight:800,fontFamily:"monospace",color:"#F0F0F0"}}>{s.t}</span></div><span style={{fontSize:i===0?"22px":"16px",fontWeight:800,fontFamily:"monospace",color:"#00E5A0"}}>+{s.ch.toFixed(1)}%</span></div>)}</div><div style={{background:"rgba(255,107,107,0.06)",border:"1px solid rgba(255,107,107,0.15)",borderRadius:"12px",padding:"14px"}}><div style={{fontSize:"13px",color:"#6B7280",fontWeight:700,marginBottom:"8px"}}>💀 오늘의 루저</div>{bot3.map((s,i)=><div key={s.t} style={{display:"flex",justifyContent:"space-between",marginBottom:"5px"}}><div style={{display:"flex",alignItems:"center",gap:"6px"}}><span style={{fontSize:i===0?"18px":"14px",fontWeight:800,color:i===0?"#FF6B6B":"#FF9999"}}>{i+1}</span><span style={{fontSize:i===0?"20px":"16px",fontWeight:800,fontFamily:"monospace",color:"#F0F0F0"}}>{s.t}</span></div><span style={{fontSize:i===0?"22px":"16px",fontWeight:800,fontFamily:"monospace",color:"#FF6B6B"}}>{s.ch.toFixed(1)}%</span></div>)}</div><div style={{background:"rgba(255,107,53,0.06)",border:"1px solid rgba(255,107,53,0.15)",borderRadius:"12px",padding:"14px"}}><div style={{fontSize:"13px",color:"#6B7280",fontWeight:700,marginBottom:"8px"}}>🔥 과매수 <span style={{fontSize:"10px",color:"#FF6B35"}}>RSI≥70</span></div>{obList.length>0?obList.map(s=><div key={s.t} style={{display:"flex",justifyContent:"space-between",marginBottom:"5px"}}><span style={{fontSize:"18px",fontWeight:800,fontFamily:"monospace",color:"#F0F0F0"}}>{s.t}</span><div style={{display:"flex",alignItems:"center",gap:"6px"}}><div style={{width:"50px",height:"7px",background:"rgba(255,255,255,0.06)",borderRadius:"4px"}}><div style={{width:`${s.rsi}%`,height:"100%",background:"linear-gradient(90deg,#f59e0b,#FF6B6B)",borderRadius:"4px"}}/></div><span style={{fontSize:"18px",fontWeight:800,fontFamily:"monospace",color:"#FF6B35"}}>{s.rsi}</span></div></div>):<div style={{color:"#4B5563"}}>없음 ✓</div>}</div><div style={{background:"rgba(0,229,160,0.04)",border:"1px solid rgba(0,229,160,0.12)",borderRadius:"12px",padding:"14px"}}><div style={{fontSize:"13px",color:"#6B7280",fontWeight:700,marginBottom:"8px"}}>❄️ 과매도 <span style={{fontSize:"10px",color:"#00E5A0"}}>RSI≤35</span></div>{osList.length>0?osList.map(s=><div key={s.t} style={{display:"flex",justifyContent:"space-between",marginBottom:"5px"}}><span style={{fontSize:"18px",fontWeight:800,fontFamily:"monospace",color:"#F0F0F0"}}>{s.t}</span><div style={{display:"flex",alignItems:"center",gap:"6px"}}><div style={{width:"50px",height:"7px",background:"rgba(255,255,255,0.06)",borderRadius:"4px"}}><div style={{width:`${s.rsi}%`,height:"100%",background:"linear-gradient(90deg,#00E5A0,#4ECDC4)",borderRadius:"4px"}}/></div><span style={{fontSize:"18px",fontWeight:800,fontFamily:"monospace",color:"#00E5A0"}}>{s.rsi}</span></div></div>):<div style={{color:"#4B5563"}}>없음</div>}</div></div></div>}
 
-      { t:'FCX',n:'Freeport-McMoRan',sec:'materials',sub:'Copper',p:68.28,ch:-0.61,r:'Buy',an:74,tu:18,rg:12,eg:25,mc:'97B',cat:'Copper electrification leverage',q:3,v:2,desc:'Copper exposure tied to electrification, grid, and power buildout.',rsi:60,ytd:30,vn:'Broad infrastructure relevance through copper.',hi:85,lo:40,avg:70,fvo:7,va:6,si:8,mo:6,be:7,ou:7,nw:true },
-      { t:'SCCO',n:'Southern Copper',sec:'materials',sub:'Copper',p:188.24,ch:-0.56,r:'Buy',an:65,tu:12,rg:10,eg:18,mc:'145B',cat:'Quality copper exposure',q:3,v:1,desc:'Higher-quality copper name with steadier profile.',rsi:48,ytd:15,vn:'Cleaner but less explosive.',hi:230,lo:100,avg:195,fvo:5,va:6,si:8,mo:5,be:5,ou:6,nw:true },
-      { t:'LAC',n:'Lithium Americas',sec:'materials',sub:'Lithium',p:4.87,ch:6.80,r:'Buy',an:60,tu:55,rg:0,eg:0,mc:'1.1B',cat:'Thacker Pass optionality',q:1,v:3,desc:'Speculative lithium optionality with project risk.',rsi:42,ytd:-28,vn:'High optionality, low certainty.',hi:10,lo:2.5,avg:7,fvo:10,va:3,si:2,mo:5,be:9,ou:6,nw:true },
-      { t:'BHP',n:'BHP Group',sec:'materials',sub:'Diversified',p:79.47,ch:-0.01,r:'Hold',an:62,tu:8,rg:4,eg:6,mc:'401B',cat:'Diversified resources',q:3,v:2,desc:'Diversified materials exposure with lower thematic purity.',rsi:46,ytd:8,vn:'Macro resources anchor.',hi:90,lo:50,avg:75,fvo:4,va:7,si:10,mo:4,be:4,ou:5,nw:true },
-      { t:'SBSW',n:'Sibanye Stillwater',sec:'materials',sub:'PGM',p:13.09,ch:-0.76,r:'Hold',an:48,tu:20,rg:8,eg:0,mc:'9.3B',cat:'PGM + metals optionality',q:1,v:2,desc:'Higher-risk metals exposure with macro sensitivity.',rsi:35,ytd:-22,vn:'Weak momentum, rebound setup.',hi:22,lo:5,avg:14,fvo:9,va:5,si:4,mo:5,be:8,ou:5,nwtrue:true },
-      { t:'VAL',n:'Valaris',sec:'materials',sub:'Drilling',p:94.60,ch:3.20,r:'Buy',an:68,tu:25,rg:12,eg:30,mc:'7B',cat:'Energy service optionality',q:2,v:3,desc:'Drilling and energy-cycle torque with indirect AI power linkage.',rsi:67,ytd:48,vn:'More cyclical than thematic.',hi:120,lo:40,avg:100,fvo:8,va:6,si:4,mo:6,be:8,ou:6,nw:true },
-      { t:'XPRO',n:'Expro Group',sec:'materials',sub:'Services',p:16.11,ch:-0.31,r:'Hold',an:55,tu:35,rg:5,eg:10,mc:'1.8B',cat:'Oilfield services angle',q:1,v:3,desc:'Services exposure with weaker direct AI thematic relevance.',rsi:40,ytd:-15,vn:'Peripheral to core theme.',hi:25,lo:10,avg:20,fvo:7,va:5,si:3,mo:4,be:7,ou:5,nw:true },
-      { t:'PALL',n:'abrdn Palladium ETF',sec:'materials',sub:'ETF',p:141.58,ch:-0.90,r:'ETF',an:0,tu:0,rg:0,eg:0,mc:'0.5B',cat:'Palladium ETF',q:0,v:0,desc:'Commodity ETF exposure rather than operating equity.',rsi:43,ytd:-8,vn:'Metals beta only.',hi:0,lo:0,avg:0,fvo:7,va:5,si:2,mo:4,be:6,ou:5,nw:true }
-    ].map(s => ({ ...s, nw: !!s.nwtrue || !!s.nw }));
+function HeatmapView({stocks}){const ss=stocks.filter(s=>parseMcap(s.mc)>0).sort((a,b)=>parseMcap(b.mc)-parseMcap(a.mc));const total=ss.reduce((a,s)=>a+parseMcap(s.mc),0);return <div><div style={{fontSize:"12px",color:"#6B7280",marginBottom:"12px"}}>크기=시총 · 색상=등락률 · YTD 표시</div><div style={{display:"flex",flexWrap:"wrap",gap:"2px"}}>{ss.map(s=>{const pct=Math.max((parseMcap(s.mc)/total)*100,2.5);const bg=s.ch>2?"rgba(0,229,160,0.25)":s.ch>0?"rgba(0,229,160,0.12)":s.ch<-2?"rgba(255,107,107,0.25)":s.ch<0?"rgba(255,107,107,0.12)":"rgba(255,255,255,0.04)";const sc=SM[s.sec]?.color||"#888";return <div key={s.t} style={{flex:`1 1 ${pct}%`,minWidth:"80px",minHeight:parseMcap(s.mc)>100?"100px":"70px",background:bg,borderRadius:"4px",padding:"8px",display:"flex",flexDirection:"column",justifyContent:"space-between"}} title={`${s.n}\nRSI:${s.rsi}`}><div><div style={{display:"flex",alignItems:"center",gap:"3px"}}><span style={{color:sc,fontSize:"6px"}}>●</span><span style={{fontSize:"14px",fontWeight:800,fontFamily:"monospace",color:"#F0F0F0"}}>{s.t}</span></div><div style={{fontSize:"10px",color:"#9CA3AF"}}>{s.n}</div></div><div><div style={{fontSize:"13px",fontWeight:700,fontFamily:"monospace",color:s.ch>0?"#00E5A0":s.ch<0?"#FF6B6B":"#9CA3AF"}}>{s.ch>0?"+":""}{s.ch.toFixed(2)}%</div><div style={{display:"flex",gap:"6px"}}><span style={{fontSize:"9px",color:"#6B7280"}}>${s.mc}</span><span style={{fontSize:"9px",color:s.ytd>0?"#00E5A0":"#FF6B6B"}}>YTD {s.ytd>0?"+":""}{s.ytd}%</span></div></div></div>})}</div></div>}
 
-    const SM = {
-      nuclear:{label:'Nuclear',icon:'☢️',color:'#00E5A0',cd:'rgba(0,229,160,0.12)',desc:'AI-linked nuclear generation and fuel cycle exposure.'},
-      power:{label:'AI Power',icon:'⚡',color:'#FFD93D',cd:'rgba(255,217,61,0.12)',desc:'Power demand, generation, and grid bottleneck beneficiaries.'},
-      photonics:{label:'Photonics',icon:'🟣',color:'#7B61FF',cd:'rgba(123,97,255,0.12)',desc:'Optics, modules, and interconnect beneficiaries.'},
-      infra:{label:'AI Infra',icon:'🖥️',color:'#FF6B35',cd:'rgba(255,107,53,0.12)',desc:'GPU, cloud, networking, cooling, and servers.'},
-      materials:{label:'Materials',icon:'⛏️',color:'#4ECDC4',cd:'rgba(78,205,196,0.12)',desc:'Materials and commodity-linked beneficiaries.'},
-      heatmap:{label:'Heatmap',icon:'🧩',color:'#FF61DC',cd:'rgba(255,97,220,0.12)',desc:'Market-cap weighted map of the universe.'},
-      matrix:{label:'Matrix',icon:'🧠',color:'#00E5FF',cd:'rgba(0,229,255,0.12)',desc:'Quality vs valuation framing.'},
-      perf:{label:'Performance',icon:'📈',color:'#F97316',cd:'rgba(249,115,22,0.12)',desc:'Relative YTD performance by theme.'},
-      corr:{label:'Correlation',icon:'🔗',color:'#a78bfa',cd:'rgba(167,139,250,0.12)',desc:'Simple thematic relationship map.'},
-      news:{label:'News',icon:'📰',color:'#38BDF8',cd:'rgba(56,189,248,0.12)',desc:'Live Finnhub company headlines.'}
-    };
+function MatrixCell({stocks,action}){const[sel,setSel]=useState(null);return <div style={{background:action.bg,border:`1px solid ${action.c}15`,borderRadius:"8px",padding:"8px",minHeight:"80px"}}><div style={{fontSize:"10px",fontWeight:700,color:action.c,marginBottom:"4px"}}>{action.l}</div><div style={{display:"flex",flexWrap:"wrap",gap:"3px"}}>{stocks.map(s=>{const sc=SM[s.sec]?.color||"#888";return <div key={s.t} onClick={e=>{e.stopPropagation();setSel(sel===s.t?null:s.t)}} style={{background:sel===s.t?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.3)",border:`1px solid ${sel===s.t?sc:sc+"30"}`,borderRadius:"5px",padding:"3px 7px",fontSize:"11px",fontWeight:700,color:"#E5E7EB",fontFamily:"monospace",cursor:"pointer"}}><span style={{color:sc,fontSize:"7px",marginRight:"2px"}}>●</span>{s.t}</div>})}</div>{sel&&stocks.filter(s=>s.t===sel).map(s=><div key={s.t} style={{marginTop:"6px",padding:"6px 8px",background:"rgba(0,0,0,0.4)",borderRadius:"6px",fontSize:"11px",color:"#E5C84C",lineHeight:1.5,borderLeft:"2px solid rgba(245,158,11,0.4)"}}>💡 {s.vn||"N/A"}<div style={{marginTop:"4px",fontSize:"10px",color:"#6B7280"}}>RSI {s.rsi} · YTD {s.ytd>0?"+":""}{s.ytd}% · ${s.mc}</div></div>)}</div>}
+function MatrixView({stocks}){const ms=stocks.filter(s=>s.q>0&&s.v>0);const grid={};for(let q=1;q<=3;q++)for(let v=1;v<=3;v++)grid[`${q}-${v}`]=[];ms.forEach(s=>{const k=`${s.q}-${s.v}`;if(grid[k])grid[k].push(s)});return <div><div style={{display:"grid",gridTemplateColumns:"50px 1fr 1fr 1fr",gap:"2px"}}><div/>{["비싼 가격","적정","좋은 가격"].map((l,i)=><div key={i} style={{textAlign:"center",padding:"6px",fontSize:"12px",fontWeight:700,color:i===2?"#00E5A0":i===1?"#a78bfa":"#ef4444"}}>{l}</div>)}{[3,2,1].map(q=><React.Fragment key={q}><div style={{writingMode:"vertical-rl",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"11px",fontWeight:700,color:q===3?"#00E5A0":q===2?"#f59e0b":"#ef4444",transform:"rotate(180deg)"}}>{q===3?"Great":q===2?"Good":"Bad"}</div>{[1,2,3].map(v=>{const k=`${q}-${v}`;return <MatrixCell key={k} stocks={grid[k]} action={MA[k]}/>})}</React.Fragment>)}</div></div>}
 
-    const LOGOS = {
-      CEG:'https://logo.clearbit.com/constellationenergy.com',
-      CCJ:'https://logo.clearbit.com/cameco.com',
-      OKLO:'https://logo.clearbit.com/oklo.com',
-      LEU:'https://logo.clearbit.com/centrusenergy.com',
-      UEC:'https://logo.clearbit.com/uraniumenergy.com',
-      SMR:'https://logo.clearbit.com/nuscalepower.com',
-      NNE:'https://logo.clearbit.com/nanonuclearenergy.com',
-      DNN:'https://logo.clearbit.com/denisonmines.com',
-      UUUU:'https://logo.clearbit.com/energyfuels.com',
-      URA:'',
-      URNM:'',
-      GEV:'https://logo.clearbit.com/gevernova.com',
-      BE:'https://logo.clearbit.com/bloomenergy.com',
-      WULF:'https://logo.clearbit.com/terawulf.com',
-      NBIS:'https://logo.clearbit.com/nebius.com',
-      APD:'https://logo.clearbit.com/airproducts.com',
-      LIN:'https://logo.clearbit.com/linde.com',
-      LITE:'https://logo.clearbit.com/lumentum.com',
-      COHR:'https://logo.clearbit.com/coherent.com',
-      MRVL:'https://logo.clearbit.com/marvell.com',
-      FN:'https://logo.clearbit.com/fabrinet.com',
-      MTSI:'https://logo.clearbit.com/macom.com',
-      MKSI:'https://logo.clearbit.com/mks.com',
-      IPGP:'https://logo.clearbit.com/ipgphotonics.com',
-      AAOI:'https://logo.clearbit.com/ao-inc.com',
-      NVDA:'https://logo.clearbit.com/nvidia.com',
-      INTC:'https://logo.clearbit.com/intel.com',
-      ORCL:'https://logo.clearbit.com/oracle.com',
-      AVGO:'https://logo.clearbit.com/broadcom.com',
-      VRT:'https://logo.clearbit.com/vertiv.com',
-      APH:'https://logo.clearbit.com/amphenol.com',
-      DELL:'https://logo.clearbit.com/dell.com',
-      CRDO:'https://logo.clearbit.com/credosemi.com',
-      EME:'https://logo.clearbit.com/emcor.net',
-      FCX:'https://logo.clearbit.com/fcx.com',
-      SCCO:'https://logo.clearbit.com/southerncoppercorp.com',
-      LAC:'https://logo.clearbit.com/lithiumamericas.com',
-      BHP:'https://logo.clearbit.com/bhp.com',
-      SBSW:'https://logo.clearbit.com/sibanyestillwater.com',
-      VAL:'https://logo.clearbit.com/valaris.com',
-      XPRO:'https://logo.clearbit.com/expro.com',
-      PALL:''
-    };
+function PerfView({stocks}){const secs=["nuclear","power","photonics","infra","materials"];return <div>{secs.map(sec=>{const m=SM[sec];const ss=[...stocks.filter(s=>s.sec===sec&&s.r!=="ETF")].sort((a,b)=>b.ytd-a.ytd);const maxAbs=Math.max(...ss.map(s=>Math.abs(s.ytd)),1);return <div key={sec} style={{marginBottom:"24px"}}><div style={{fontSize:"14px",fontWeight:700,color:m.color,marginBottom:"8px"}}>{m.icon} {m.label}</div>{ss.map((s,i)=>{const w=i===0,l=i===ss.length-1&&ss.length>1;return <div key={s.t} style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px",padding:"6px 10px",background:w?"rgba(0,229,160,0.06)":l?"rgba(255,107,107,0.06)":"transparent",borderRadius:"8px"}}><span style={{width:"14px",fontSize:"12px"}}>{w?"🏆":l?"💀":""}</span><span style={{width:"55px",fontSize:"14px",fontWeight:800,fontFamily:"monospace",color:"#F0F0F0"}}>{s.t}</span><div style={{flex:1,height:"18px",background:"rgba(255,255,255,0.03)",borderRadius:"4px",overflow:"hidden",position:"relative"}}><div style={{position:"absolute",left:s.ytd>=0?"0":"auto",right:s.ytd>=0?"auto":"0",height:"100%",width:`${Math.abs(s.ytd)/maxAbs*100}%`,background:s.ytd>=0?`linear-gradient(90deg,${m.color}44,${m.color})`:"linear-gradient(90deg,#FF6B6B,#FF6B6B44)",borderRadius:"4px"}}/><span style={{position:"absolute",left:s.ytd>=0?`${Math.min(Math.abs(s.ytd)/maxAbs*100+1,85)}%`:"auto",right:s.ytd>=0?"auto":`${Math.min(Math.abs(s.ytd)/maxAbs*100+1,85)}%`,top:"50%",transform:"translateY(-50%)",fontSize:"11px",fontWeight:700,color:s.ytd>=0?"#00E5A0":"#FF6B6B",fontFamily:"monospace"}}>{s.ytd>0?"+":""}{s.ytd}%</span></div><RsiBadge rsi={s.rsi}/></div>})}</div>})}</div>}
 
-    async function fhQuote(sym,key){
-      try{
-        const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${key}`);
-        if(!r.ok) return null;
-        const d = await r.json();
-        if(!d || !d.c) return null;
-        return { price:d.c, change:d.d || 0, changePct:d.dp || 0 };
-      }catch{
-        return null;
-      }
-    }
+// ── SA LP Holdings ──
+const SA_HOLDINGS=[
+  {t:"BE",type:"stock",shares:"10.08M",val:"$875.5M",pct:15.87,delta:"+100%",note:"최대 포지션. 신규 진입 후 단숨에 1위"},
+  {t:"CRWV",type:"call",shares:"10.81M",val:"$774.4M",pct:14.04,delta:"+672%",note:"콜옵션 대규모 확대. 레버리지 베팅"},
+  {t:"INTC",type:"call",shares:"20.24M",val:"$746.8M",pct:13.54,delta:"유지",note:"콜옵션 변동 없음. 고정 확신"},
+  {t:"LITE",type:"stock",shares:"1.30M",val:"$478.6M",pct:8.68,delta:"+100%",note:"신규 진입. 최대 확신 종목"},
+  {t:"CRWV",type:"stock",shares:"6.10M",val:"$436.7M",pct:7.92,delta:"+48%",note:"주식+콜 합산 시 AUM 22%"},
+  {t:"CORZ",type:"stock",shares:"28.76M",val:"$418.7M",pct:7.59,delta:"+42%",note:"Core Scientific. BTC→AI DC"},
+  {t:"IREN",type:"stock",shares:"8.70M",val:"$328.6M",pct:5.96,delta:"+20%",note:"호주 AI DC. MS $9.7B 계약"},
+  {t:"APLD",type:"stock",shares:"11.34M",val:"$278.0M",pct:5.04,delta:"+87%",note:"Applied Digital. AI 호스팅"},
+  {t:"SNDK",type:"stock",shares:"1.05M",val:"$250.2M",pct:4.54,delta:"+816%",note:"SanDisk. 저장장치 수요 급증"},
+  {t:"CIFR",type:"stock",shares:"10.47M",val:"$154.5M",pct:2.80,delta:"+100%",note:"Cipher Mining 신규"},
+  {t:"EQT",type:"stock",shares:"2.48M",val:"$133.0M",pct:2.41,delta:"+104%",note:"천연가스. DC 전력원"},
+  {t:"COHR",type:"stock",shares:"480K",val:"$88.6M",pct:1.61,delta:"+211%",note:"포토닉스. NVIDIA 파트너"},
+  {t:"SEI",type:"stock",shares:"1.87M",val:"$85.8M",pct:1.56,delta:"+62%",note:"Solaris Energy Infra"},
+  {t:"TSEM",type:"stock",shares:"723K",val:"$84.9M",pct:1.54,delta:"+54%",note:"Tower Semi. 파운드리"},
+  {t:"RIOT",type:"stock",shares:"6.17M",val:"$78.1M",pct:1.42,delta:"+71%",note:"Riot Platforms. BTC→AI"},
+  {t:"KRC",type:"stock",shares:"1.33M",val:"$49.6M",pct:0.90,delta:"+100%",note:"Kilroy Realty. DC REIT"},
+  {t:"HUT",type:"stock",shares:"860K",val:"$39.5M",pct:0.72,delta:"+44%",note:"Hut 8. BTC→AI"},
+  {t:"EQT",type:"call",shares:"700K",val:"$37.5M",pct:0.68,delta:"+100%",note:"EQT 콜옵션 신규"},
+  {t:"BE",type:"call",shares:"409K",val:"$35.5M",pct:0.64,delta:"+100%",note:"BE 콜옵션 신규"},
+  {t:"WYFI",type:"stock",shares:"1.76M",val:"$27.8M",pct:0.50,delta:"+100%",note:"Wy-Fi. 무선인프라"},
+  {t:"PSIX",type:"stock",shares:"432K",val:"$24.7M",pct:0.45,delta:"+100%",note:"Power Solutions Intl"},
+  {t:"BTDR",type:"stock",shares:"1.79M",val:"$20.0M",pct:0.36,delta:"+92%",note:"BitDeer. 채굴→AI"},
+  {t:"CLSK",type:"stock",shares:"1.64M",val:"$16.6M",pct:0.30,delta:"+100%",note:"CleanSpark. 채굴"},
+  {t:"KEEL",type:"stock",shares:"6.90M",val:"$16.2M",pct:0.29,delta:"+100%",note:"Keel. AI 소형주"},
+  {t:"LBRT",type:"stock",shares:"567K",val:"$10.5M",pct:0.19,delta:"+100%",note:"Liberty Energy"},
+  {t:"INFY",type:"put",shares:"500K",val:"$8.9M",pct:0.16,delta:"+100%",note:"인포시스 풋. 숏 베팅"},
+  {t:"PUMP",type:"stock",shares:"910K",val:"$8.7M",pct:0.16,delta:"+100%",note:"ProPetro. 에너지"},
+  {t:"BW",type:"stock",shares:"1.35M",val:"$8.6M",pct:0.16,delta:"+100%",note:"Babcock & Wilcox. 원자력"},
+  {t:"INTC",type:"stock",shares:"1.4K",val:"—",pct:0,delta:"",note:"소량 주식 보유"},
+];
 
-    async function fhNews(sym,key){
-      try{
-        const to = new Date().toISOString().slice(0,10);
-        const fr = new Date(Date.now()-7*86400000).toISOString().slice(0,10);
-        const r = await fetch(`https://finnhub.io/api/v1/company-news?symbol=${sym}&from=${fr}&to=${to}&token=${key}`);
-        if(!r.ok) return [];
-        const d = await r.json();
-        return Array.isArray(d) ? d.slice(0,8) : [];
-      }catch{
-        return [];
-      }
-    }
+function SAView(){
+  const totalVal=5516758;
+  const themes=[
+    {name:"AI DC / BTC 채굴→AI 전환",tickers:["CORZ","IREN","APLD","RIOT","HUT","CIFR","BTDR","CLSK","CRWV"],color:"#FF6B35",pct:52},
+    {name:"광학 / 포토닉스",tickers:["LITE","COHR","TSEM"],color:"#7B61FF",pct:12},
+    {name:"에너지 / 전력",tickers:["BE","EQT","SEI","BW","LBRT","PUMP"],color:"#FFD93D",pct:21},
+    {name:"반도체 / 칩",tickers:["INTC","SNDK"],color:"#00E5FF",pct:14},
+    {name:"기타",tickers:["KRC","WYFI","PSIX","KEEL","INFY"],color:"#4ECDC4",pct:2},
+  ];
+  return <div>
+    {/* Summary */}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:"1px",background:"rgba(167,139,250,0.06)",borderRadius:"10px",overflow:"hidden",marginBottom:"16px"}}>
+      {[{l:"AUM (13F)",v:"$5.52B"},{l:"포지션",v:"29"},{l:"1Y 수익률",v:"+28.9%"},{l:"신규 편입",v:"10"},{l:"콜옵션",v:"3"},{l:"풋옵션",v:"1"}].map((m,i)=><div key={i} style={{background:"#0C0E13",padding:"12px 8px",textAlign:"center"}}><div style={{fontSize:"10px",color:"#6B7280",marginBottom:"4px",textTransform:"uppercase"}}>{m.l}</div><div style={{fontSize:"18px",fontWeight:800,color:"#a78bfa",fontFamily:"monospace"}}>{m.v}</div></div>)}
+    </div>
 
-    function delay(ms){
-      return new Promise(r => setTimeout(r,ms));
-    }
+    {/* Theme Bars */}
+    <div style={{marginBottom:"20px"}}>
+      <div style={{fontSize:"13px",fontWeight:700,color:"#E5E7EB",marginBottom:"10px"}}>테마별 배분</div>
+      {themes.map((th,i)=><div key={i} style={{marginBottom:"8px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:"12px",marginBottom:"3px"}}><span style={{color:th.color,fontWeight:600}}>{th.name}</span><span style={{color:"#9CA3AF",fontFamily:"monospace"}}>{th.pct}%</span></div>
+        <div style={{height:"8px",background:"rgba(255,255,255,0.04)",borderRadius:"4px",overflow:"hidden"}}><div style={{height:"100%",width:`${th.pct}%`,background:`linear-gradient(90deg,${th.color}88,${th.color})`,borderRadius:"4px"}}/></div>
+        <div style={{fontSize:"10px",color:"#6B7280",marginTop:"2px"}}>{th.tickers.join(" · ")}</div>
+      </div>)}
+    </div>
 
-    function getInitials(name,ticker){
-      if(ticker && ticker.length <= 4) return ticker.slice(0,2).toUpperCase();
-      if(!name) return '?';
-      const parts = String(name).trim().split(/\s+/).filter(Boolean);
-      if(parts.length === 1) return parts[0].slice(0,2).toUpperCase();
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-
-    function Logo({ ticker, name, size=28, accent='#00E5FF' }){
-      const [failed,setFailed] = useState(false);
-      const src = LOGOS[ticker];
-
-      if(!src || failed){
-        return (
-          <div style={{
-            width:size,height:size,minWidth:size,borderRadius:'50%',
-            display:'flex',alignItems:'center',justifyContent:'center',
-            background:`linear-gradient(135deg, ${accent}28, rgba(255,255,255,0.06))`,
-            border:`1px solid ${accent}30`,
-            color:'#E5E7EB',fontSize:10,fontWeight:800,letterSpacing:'.3px',overflow:'hidden'
-          }}>
-            {getInitials(name,ticker)}
+    {/* Holdings Table */}
+    <div style={{fontSize:"13px",fontWeight:700,color:"#E5E7EB",marginBottom:"10px"}}>전체 포지션 (포트폴리오 비중순)</div>
+    <div style={{overflowX:"auto"}}>
+      {SA_HOLDINGS.map((h,i)=>{
+        const isCall=h.type==="call",isPut=h.type==="put";
+        const typeBg=isCall?"rgba(0,229,160,0.08)":isPut?"rgba(255,107,107,0.08)":"transparent";
+        const typeColor=isCall?"#00E5A0":isPut?"#FF6B6B":"#a78bfa";
+        const typeLabel=isCall?"CALL":isPut?"PUT":"STOCK";
+        const barW=Math.min(h.pct/16*100,100);
+        const inDashboard=initS.some(s=>s.t===h.t);
+        return <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"10px 12px",background:i%2===0?"rgba(255,255,255,0.015)":"transparent",borderRadius:"8px",marginBottom:"2px"}}>
+          <span style={{width:"28px",fontSize:"12px",fontWeight:800,color:"#4B5563",fontFamily:"monospace",textAlign:"right"}}>{i+1}</span>
+          <span style={{width:"55px",fontSize:"16px",fontWeight:800,color:inDashboard?"#F0F0F0":"#9CA3AF",fontFamily:"monospace"}}>{h.t}</span>
+          <span style={{padding:"2px 6px",borderRadius:"4px",fontSize:"9px",fontWeight:700,background:typeBg,color:typeColor,border:`1px solid ${typeColor}30`,minWidth:"40px",textAlign:"center"}}>{typeLabel}</span>
+          <div style={{flex:1,minWidth:"80px"}}>
+            <div style={{height:"6px",background:"rgba(255,255,255,0.04)",borderRadius:"3px",overflow:"hidden"}}><div style={{height:"100%",width:`${barW}%`,background:`linear-gradient(90deg,#a78bfa88,#a78bfa)`,borderRadius:"3px"}}/></div>
           </div>
-        );
-      }
-
-      return (
-        <div style={{
-          width:size,height:size,minWidth:size,borderRadius:'50%',overflow:'hidden',
-          background:'#fff',border:'1px solid rgba(255,255,255,0.10)'
-        }}>
-          <img
-            src={src}
-            alt={name}
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            onError={() => setFailed(true)}
-            style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}
-          />
+          <span style={{width:"55px",fontSize:"14px",fontWeight:800,color:"#a78bfa",fontFamily:"monospace",textAlign:"right"}}>{h.pct>0?h.pct.toFixed(1)+"%":"<0.1%"}</span>
+          <span style={{width:"70px",fontSize:"11px",color:"#9CA3AF",fontFamily:"monospace",textAlign:"right"}}>{h.val}</span>
+          <span style={{width:"50px",fontSize:"11px",color:h.delta.includes("+")?"#00E5A0":h.delta==="유지"?"#FFD93D":"#6B7280",fontFamily:"monospace",textAlign:"right"}}>{h.delta}</span>
+          <span style={{flex:"0 0 180px",fontSize:"10px",color:"#6B7280",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{h.note}</span>
         </div>
-      );
-    }
+      })}
+    </div>
 
-    function RsiBadge({ rsi }){
-      if(rsi == null) return null;
-      const ob = rsi >= 70;
-      const os = rsi <= 30;
-      const hot = rsi >= 60;
-      const cold = rsi <= 40;
-      const c = ob ? '#FF6B6B' : os ? '#00E5A0' : hot ? '#FFD93D' : cold ? '#4ECDC4' : '#6B7280';
-      const l = ob ? 'Hot' : os ? 'OS' : hot ? 'Warm' : cold ? 'Cool' : '';
-      return (
-        <span style={{
-          fontSize:'10px',padding:'2px 6px',borderRadius:'4px',
-          background:`${c}18`,color:c,border:`1px solid ${c}30`,fontWeight:600
-        }}>
-          RSI {rsi}{l ? ` ${l}` : ''}
-        </span>
-      );
-    }
+    {/* Insight */}
+    <div style={{marginTop:"20px",padding:"14px",background:"rgba(167,139,250,0.06)",border:"1px solid rgba(167,139,250,0.15)",borderRadius:"12px"}}>
+      <div style={{fontSize:"13px",fontWeight:700,color:"#a78bfa",marginBottom:"8px"}}>🧠 핵심 인사이트</div>
+      <div style={{fontSize:"12px",color:"#D1D5DB",lineHeight:1.7}}>
+        Aschenbrenner는 AGI 인프라 레이어에 올인. BTC 채굴→AI DC 전환 기업(CORZ·IREN·RIOT 등)이 AUM의 52%를 차지. CRWV는 주식+콜 합산 22%로 사실상 최대 베팅. INTC 콜옵션 13.5%는 18A 파운드리 턴어라운드에 대한 고확신 레버리지. BE 신규 진입 후 즉시 1위 포지션(16%)으로 올린 점이 특히 주목할 만함.
+        <br/><span style={{color:"#9CA3AF",fontSize:"11px"}}>출처: SEC 13F-HR, 2026-02-11 제출, 2025-12-31 기준</span>
+      </div>
+    </div>
+  </div>;
+}
 
-    function Bar({ val, mx, c, lb }){
-      return (
-        <div style={{ marginBottom:'5px' }}>
-          <div style={{ display:'flex',justifyContent:'space-between',fontSize:'11px',color:'#8A8F98',marginBottom:'2px' }}>
-            <span>{lb}</span>
-            <span style={{ color: val > 0 ? c : val < 0 ? '#FF6B6B' : '#555', fontWeight:600, fontFamily:'monospace' }}>
-              {val > 0 ? '+' : ''}{val}
-            </span>
-          </div>
-          <div style={{ height:'4px',background:'rgba(255,255,255,0.04)',borderRadius:'2px' }}>
-            <div style={{
-              height:'100%',
-              width:`${Math.min(Math.abs(val)/mx*100,100)}%`,
-              borderRadius:'2px',
-              background:`linear-gradient(90deg, ${c}88, ${c})`
-            }} />
-          </div>
+// ── News View ──
+function NewsView({apiKey}){
+  const[sym,setSym]=useState("NVDA");const[news,setNews]=useState([]);const[loading,setLoading]=useState(false);const[input,setInput]=useState("NVDA");
+  const tickers=initS.filter(s=>s.r!=="ETF").map(s=>s.t);
+  const load=useCallback(async(s)=>{if(!apiKey){setNews([]);return}setLoading(true);const data=await fhNews(s,apiKey);setNews(data);setLoading(false)},[apiKey]);
+  useEffect(()=>{load(sym)},[sym,apiKey]);
+  return <div>
+    {!apiKey&&<div style={{padding:"20px",background:"rgba(255,107,53,0.08)",border:"1px solid rgba(255,107,53,0.2)",borderRadius:"12px",marginBottom:"16px",fontSize:"13px",color:"#FF6B35"}}>⚠️ Finnhub API 키를 입력하면 실시간 뉴스를 불러옵니다. 우측 상단 ⚙️ 버튼을 클릭하세요.</div>}
+    <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"16px"}}>
+      {tickers.slice(0,20).map(t=><button key={t} onClick={()=>{setSym(t);setInput(t)}} style={{padding:"5px 10px",borderRadius:"6px",border:sym===t?"1px solid #38BDF8":"1px solid rgba(255,255,255,0.06)",background:sym===t?"rgba(56,189,248,0.12)":"transparent",color:sym===t?"#38BDF8":"#6B7280",fontSize:"12px",fontWeight:600,cursor:"pointer",outline:"none"}}>{t}</button>)}
+      <input value={input} onChange={e=>setInput(e.target.value.toUpperCase())} onKeyDown={e=>{if(e.key==="Enter")setSym(input)}} placeholder="직접 입력" style={{padding:"5px 10px",borderRadius:"6px",border:"1px solid rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.03)",color:"#E5E7EB",fontSize:"12px",width:"100px",outline:"none"}}/>
+    </div>
+    <div style={{fontSize:"16px",fontWeight:800,color:"#38BDF8",marginBottom:"12px",fontFamily:"monospace"}}>{sym} 최신 뉴스 {loading&&<span className="spinner" style={{marginLeft:"8px"}}/>}</div>
+    {news.length>0?news.map((n,i)=><a key={i} href={n.url} target="_blank" rel="noopener" style={{display:"block",padding:"14px",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)",borderRadius:"10px",marginBottom:"8px",textDecoration:"none",transition:"border-color .2s"}} onMouseOver={e=>e.currentTarget.style.borderColor="rgba(56,189,248,0.3)"} onMouseOut={e=>e.currentTarget.style.borderColor="rgba(255,255,255,0.05)"}>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}><span style={{fontSize:"13px",fontWeight:700,color:"#E5E7EB"}}>{n.headline?.slice(0,80)}{n.headline?.length>80?"...":""}</span><span style={{fontSize:"10px",color:"#6B7280",whiteSpace:"nowrap",marginLeft:"8px"}}>{new Date(n.datetime*1000).toLocaleDateString("ko")}</span></div>
+      <div style={{fontSize:"11px",color:"#9CA3AF"}}>{n.summary?.slice(0,120)}{n.summary?.length>120?"...":""}</div>
+      <div style={{fontSize:"10px",color:"#6B7280",marginTop:"4px"}}>{n.source}</div>
+    </a>):<div style={{padding:"30px",textAlign:"center",color:"#4B5563"}}>{apiKey?"뉴스를 불러오는 중...":"API 키를 입력하세요"}</div>}
+  </div>;
+}
+
+function Summ({stocks,color}){const ne=stocks.filter(x=>x.r!=="ETF"),wp=stocks.filter(x=>x.p>0);const au=ne.length?Math.round(ne.reduce((a,x)=>a+x.tu,0)/ne.length):0;const ac=wp.length?(wp.reduce((a,x)=>a+x.ch,0)/wp.length).toFixed(2):"—";const tg=[...ne].sort((a,b)=>b.rg-a.rg)[0];return <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(100px,1fr))",gap:"1px",background:"rgba(255,255,255,0.035)",borderRadius:"10px",overflow:"hidden",marginBottom:"16px"}}>{[{l:"종목",v:`${stocks.length}`},{l:"평균 상승여력",v:`+${au}%`},{l:"오늘 평균",v:`${Number(ac)>0?"+":""}${ac}%`},{l:"Top",v:tg?tg.t:"—"}].map((m,i)=><div key={i} style={{background:"#0C0E13",padding:"12px 8px",textAlign:"center"}}><div style={{fontSize:"10px",color:"#6B7280",marginBottom:"4px",textTransform:"uppercase"}}>{m.l}</div><div style={{fontSize:"18px",fontWeight:800,color,fontFamily:"monospace"}}>{m.v}</div></div>)}</div>}
+
+// ── Main App ──
+function App(){
+  const[tab,setTab]=useState("nuclear");
+  const[sort,setSort]=useState("default");
+  const[q,setQ]=useState("");
+  const[apiKey,setApiKey]=useState(()=>localStorage.getItem("fh_key")||"");
+  const[showSettings,setShowSettings]=useState(false);
+  const[keyInput,setKeyInput]=useState(apiKey);
+  const[stocks,setStocks]=useState(initS);
+  const[fetching,setFetching]=useState(false);
+  const[lastUpdate,setLastUpdate]=useState(null);
+  const timerRef=useRef(null);
+
+  const sec=SM[tab];const isSpecial=["heatmap","matrix","perf","sa","news"].includes(tab);
+  const ss=stocks.filter(s=>s.sec===tab);
+  const SO=[{k:"default",l:"기본"},{k:"change",l:"등락률"},{k:"ytd",l:"YTD"},{k:"targetUpside",l:"상승여력"},{k:"rsi",l:"RSI"}];
+
+  // Fetch live prices
+  const fetchAll=useCallback(async()=>{
+    if(!apiKey)return;
+    setFetching(true);
+    const updated=[...stocks];
+    for(let i=0;i<updated.length;i++){
+      const s=updated[i];
+      if(s.r==="ETF"&&!s.t.match(/^[A-Z]{1,5}$/))continue;
+      const quote=await fhQuote(s.t,apiKey);
+      if(quote&&quote.price>0){updated[i]={...s,p:quote.price,ch:quote.changePct||0}}
+      if(i%28===27)await delay(60000); // rate limit
+    }
+    setStocks(updated);
+    setLastUpdate(new Date().toLocaleTimeString("ko"));
+    setFetching(false);
+  },[apiKey,stocks]);
+
+  useEffect(()=>{
+    if(apiKey){fetchAll();timerRef.current=setInterval(fetchAll,5*60*1000)}
+    return()=>{if(timerRef.current)clearInterval(timerRef.current)};
+  },[apiKey]);
+
+  const saveKey=()=>{localStorage.setItem("fh_key",keyInput);setApiKey(keyInput);setShowSettings(false)};
+
+  const fs=useMemo(()=>{
+    let st=[...ss];
+    if(q){const ql=q.toLowerCase();st=st.filter(s=>s.t.toLowerCase().includes(ql)||s.n.toLowerCase().includes(ql))}
+    if(sort==="change")st.sort((a,b)=>b.ch-a.ch);else if(sort==="ytd")st.sort((a,b)=>b.ytd-a.ytd);else if(sort==="targetUpside")st.sort((a,b)=>b.tu-a.tu);else if(sort==="rsi")st.sort((a,b)=>b.rsi-a.rsi);
+    return st;
+  },[tab,sort,q,stocks]);
+
+  return <div style={{minHeight:"100vh",background:"#080A0F",color:"#E5E7EB",fontFamily:"'Inter',system-ui,sans-serif"}}>
+    {/* Header */}
+    <div style={{padding:"20px 20px 10px",borderBottom:"1px solid rgba(255,255,255,.04)",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+      <div>
+        <div style={{display:"flex",alignItems:"center",gap:"7px",marginBottom:"3px"}}>
+          <div style={{width:"7px",height:"7px",borderRadius:"50%",background:sec.color,animation:"pl 2s infinite",boxShadow:`0 0 8px ${sec.color}50`}}/>
+          <span style={{fontSize:"11px",color:"#6B7280",textTransform:"uppercase",letterSpacing:"1.5px",fontWeight:600}}>AI Only</span>
+          {fetching&&<span className="spinner"/>}
+          {lastUpdate&&<span style={{fontSize:"10px",color:"#4B5563"}}>· 갱신 {lastUpdate}</span>}
         </div>
-      );
-    }
+        <h1 style={{fontSize:"24px",fontWeight:800,margin:"5px 0 3px",background:`linear-gradient(135deg,${sec.color},#fff,${sec.color})`,backgroundSize:"200% 200%",animation:"gl 4s ease infinite",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>AI 섹터 종합 대시보드</h1>
+        <p style={{fontSize:"13px",color:"#6B7280"}}>{stocks.length}종목 · 10탭 · 2026.04.18</p>
+      </div>
+      <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+        {apiKey&&<button onClick={fetchAll} disabled={fetching} style={{padding:"6px 12px",borderRadius:"8px",border:"1px solid rgba(0,229,255,0.2)",background:"rgba(0,229,255,0.08)",color:"#00E5FF",fontSize:"12px",fontWeight:600,cursor:"pointer",outline:"none"}}>{fetching?"갱신중...":"↻ 새로고침"}</button>}
+        <button onClick={()=>setShowSettings(!showSettings)} style={{padding:"6px 12px",borderRadius:"8px",border:"1px solid rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.04)",color:"#9CA3AF",fontSize:"12px",cursor:"pointer",outline:"none"}}>⚙️ API</button>
+      </div>
+    </div>
 
-    function Radar({ f, color }){
-      const lb = ['Fwd','Val','Str','Mom','Beta','Ups'];
-      const ks = f || [];
-      const cx = 90, cy = 90, r = 65;
-      const an = ks.map((_,i) => Math.PI * 2 * i / ks.length - Math.PI / 2);
-      const pts = ks.map((k,i) => ({
-        x: cx + Math.cos(an[i]) * r * (k / 10),
-        y: cy + Math.sin(an[i]) * r * (k / 10)
-      }));
+    {/* Settings */}
+    {showSettings&&<div style={{padding:"12px 20px",background:"rgba(0,229,255,0.04)",borderBottom:"1px solid rgba(0,229,255,0.1)",animation:"fi .2s ease"}}>
+      <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
+        <span style={{fontSize:"12px",color:"#00E5FF",fontWeight:600}}>Finnhub API Key:</span>
+        <input value={keyInput} onChange={e=>setKeyInput(e.target.value)} type="password" placeholder="cxxxxxxxxxx" style={{padding:"6px 10px",borderRadius:"6px",border:"1px solid rgba(0,229,255,0.2)",background:"rgba(0,0,0,0.3)",color:"#E5E7EB",fontSize:"12px",width:"260px",outline:"none"}}/>
+        <button onClick={saveKey} style={{padding:"6px 14px",borderRadius:"6px",background:"#00E5FF",color:"#000",fontSize:"12px",fontWeight:700,cursor:"pointer",border:"none"}}>저장</button>
+        <span style={{fontSize:"10px",color:"#6B7280"}}>무료: <a href="https://finnhub.io/register" target="_blank" style={{color:"#00E5FF"}}>finnhub.io</a> (30 calls/min)</span>
+      </div>
+    </div>}
 
-      return (
-        <svg viewBox="0 0 180 180" style={{ width:'100%',maxWidth:'200px' }}>
-          {[.25,.5,.75,1].map((lv,li) => (
-            <polygon
-              key={li}
-              points={an.map(a => `${cx + Math.cos(a)*r*lv},${cy + Math.sin(a)*r*lv}`).join(' ')}
-              fill="none"
-              stroke="rgba(255,255,255,0.08)"
-              strokeWidth=".5"
-            />
-          ))}
-          {an.map((a,i) => (
-            <g key={i}>
-              <line x1={cx} y1={cy} x2={cx + Math.cos(a)*r} y2={cy + Math.sin(a)*r} stroke="rgba(255,255,255,0.06)" strokeWidth=".5" />
-              <text x={cx + Math.cos(a)*(r+16)} y={cy + Math.sin(a)*(r+16)} fill="#8A8F98" fontSize="8" textAnchor="middle" dominantBaseline="middle">{lb[i]}</text>
-            </g>
-          ))}
-          <polygon points={pts.map(p => `${p.x},${p.y}`).join(' ')} fill={`${color}25`} stroke={color} strokeWidth="1.5" />
-        </svg>
-      );
-    }
+    <WinnersBar stocks={stocks}/>
 
-    function TChart({ s, color }){
-      if(!s.hi || !s.lo) return null;
-      const mn = s.lo * .85, mx = s.hi * 1.08, rng = mx - mn;
-      const y = val => 100 - ((val - mn) / rng) * 100;
+    {/* Tabs */}
+    <div style={{display:"flex",gap:"2px",padding:"8px 20px",overflowX:"auto",borderBottom:"1px solid rgba(255,255,255,.03)"}}>
+      {Object.entries(SM).map(([k,s])=>{const a=k===tab;
+        return <button key={k} onClick={()=>{setTab(k);setSort("default");setQ("")}} style={{display:"flex",alignItems:"center",gap:"4px",padding:"7px 12px",borderRadius:"8px",border:a?`1px solid ${s.color}40`:"1px solid transparent",background:a?s.cd:"transparent",color:a?s.color:"#6B7280",fontSize:"12px",fontWeight:a?700:500,cursor:"pointer",whiteSpace:"nowrap",outline:"none"}}><span style={{fontSize:"14px"}}>{s.icon}</span>{s.label}</button>})}
+    </div>
 
-      return (
-        <svg viewBox="0 0 220 120" style={{ width:'100%',maxWidth:'240px' }}>
-          <line x1="30" y1={y(s.p)*1.15} x2="200" y2={y(s.p)*1.15} stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-          {[
-            [s.hi,'#00E5A0','High'],
-            [s.avg,'#FFD93D','Avg'],
-            [s.lo,'#FF6B6B','Low']
-          ].map(([val,cl,lb],i) => (
-            <g key={i}>
-              <line x1="90" y1={y(val)*1.15} x2="190" y2={y(val)*1.15} stroke={cl} strokeWidth="1" strokeDasharray="4,2" />
-              <text x="195" y={y(val)*1.14} fill={cl} fontSize="8" fontWeight="700">{lb}</text>
-              <text x="195" y={y(val)*1.13 + 6} fill={cl} fontSize="9" fontFamily="monospace">{val}</text>
-              <circle cx="190" cy={y(val)*1.15} r="3" fill={cl} />
-            </g>
-          ))}
-          <text x="35" y={y(s.p)*1.13} fill="#fff" fontSize="8">Now</text>
-          <text x="35" y={y(s.p)*1.14 + 7} fill="#fff" fontSize="10" fontWeight="700" fontFamily="monospace">{s.p}</text>
-          <circle cx="90" cy={y(s.p)*1.15} r="3" fill="#fff" />
-        </svg>
-      );
-    }
-
-    function Card({ s, sc, i }){
-      const [ex,setEx] = useState(false);
-      const etf = s.r === 'ETF';
-      const rc = s.r.includes('Strong') ? '#00E5A0' : s.r === 'Buy' ? '#5EDFB0' : etf ? '#4ECDC4' : '#E5C84C';
-
-      return (
-        <div
-          style={{
-            background:'rgba(255,255,255,0.018)',
-            border:'1px solid rgba(255,255,255,0.05)',
-            borderRadius:'14px',
-            padding:'18px',
-            animation:`fi .3s ease ${i * .03}s both`,
-            position:'relative',
-            cursor:'pointer'
-          }}
-          onClick={() => setEx(!ex)}
-        >
-          {s.nw && (
-            <div style={{
-              position:'absolute',top:'8px',right:'8px',
-              background:'rgba(255,107,53,0.18)',borderRadius:'4px',padding:'2px 6px',
-              fontSize:'9px',fontWeight:800,color:'#FF6B35'
-            }}>
-              NEW
-            </div>
-          )}
-
-          <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'8px' }}>
-            <div>
-              <div style={{ display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap' }}>
-                <Logo ticker={s.t} name={s.n} size={28} accent={sc} />
-                <span style={{ fontSize:'20px',fontWeight:800,color:'#F0F0F0',fontFamily:'monospace' }}>{s.t}</span>
-                <span style={{ padding:'3px 8px',borderRadius:'6px',fontSize:'11px',fontWeight:700,background:`${rc}18`,color:rc }}>{s.r}</span>
-                <RsiBadge rsi={s.rsi} />
-              </div>
-              <div style={{ fontSize:'13px',color:'#9CA3AF',marginTop:'6px' }}>{s.n}</div>
-            </div>
-
-            {s.p > 0 && (
-              <div style={{ textAlign:'right' }}>
-                <div style={{ fontSize:'18px',fontWeight:700,color:'#E5E7EB',fontFamily:'monospace' }}>
-                  {s.p < 100 ? s.p.toFixed(2) : s.p.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
-                </div>
-                <div style={{
-                  fontSize:'13px',fontWeight:600,fontFamily:'monospace',
-                  color:s.ch > 0 ? '#00E5A0' : s.ch < 0 ? '#FF6B6B' : '#6B7280'
-                }}>
-                  {s.ch > 0 ? '+' : ''}{typeof s.ch === 'number' ? s.ch.toFixed(2) : s.ch}%
-                </div>
-              </div>
-            )}
+    {/* Content */}
+    <div style={{padding:"14px 20px"}}>
+      <p style={{fontSize:"13px",color:"#9CA3AF",marginBottom:"12px"}}><span style={{color:sec.color,fontWeight:700}}>{sec.icon} {sec.label}</span> — {sec.desc}</p>
+      {tab==="heatmap"?<HeatmapView stocks={stocks}/>
+      :tab==="matrix"?<MatrixView stocks={stocks}/>
+      :tab==="perf"?<PerfView stocks={stocks}/>
+      :tab==="sa"?<SAView/>
+      :tab==="news"?<NewsView apiKey={apiKey}/>
+      :<>
+        <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"16px"}}>
+          <div style={{flex:"1 1 160px",position:"relative"}}>
+            <input type="text" placeholder="검색..." value={q} onChange={e=>setQ(e.target.value)} style={{width:"100%",padding:"8px 10px 8px 30px",borderRadius:"8px",border:"1px solid rgba(255,255,255,.07)",background:"rgba(255,255,255,.025)",color:"#E5E7EB",fontSize:"13px",outline:"none"}}/>
+            <span style={{position:"absolute",left:"9px",top:"50%",transform:"translateY(-50%)",fontSize:"12px",opacity:.3}}>🔍</span>
           </div>
-
-          <div style={{ display:'flex',gap:'6px',marginBottom:'10px',flexWrap:'wrap' }}>
-            <span style={{ background:`${sc}14`,borderRadius:'5px',padding:'2px 8px',fontSize:'11px',color:sc,fontWeight:600 }}>{s.sub}</span>
-            <span style={{ background:'rgba(255,255,255,0.04)',borderRadius:'5px',padding:'2px 8px',fontSize:'11px',color:'#9CA3AF',fontFamily:'monospace' }}>{s.mc}</span>
-            {s.ytd !== undefined && (
-              <span style={{
-                background:s.ytd > 0 ? 'rgba(0,229,160,0.08)' : 'rgba(255,107,107,0.08)',
-                borderRadius:'5px',padding:'2px 8px',fontSize:'11px',
-                color:s.ytd > 0 ? '#00E5A0' : '#FF6B6B',fontFamily:'monospace'
-              }}>
-                YTD {s.ytd > 0 ? '+' : ''}{s.ytd}%
-              </span>
-            )}
-          </div>
-
-          {!etf && (
-            <>
-              <Bar val={s.tu} mx={100} c={sc} lb="Target" />
-              <Bar val={s.rg} mx={200} c="#4ECDC4" lb="Revenue" />
-              <Bar val={s.eg} mx={200} c="#FFD93D" lb="EPS" />
-
-              <div style={{ display:'flex',alignItems:'center',gap:'5px',margin:'6px 0' }}>
-                <span style={{ fontSize:'11px',color:'#6B7280' }}>Analyst</span>
-                <div style={{ flex:1,display:'flex',gap:'1.5px' }}>
-                  {[...Array(10)].map((_,j) => (
-                    <div key={j} style={{
-                      flex:1,height:'5px',borderRadius:'2px',
-                      background:j < Math.round((s.an || 0) / 10) ? sc : 'rgba(255,255,255,0.04)'
-                    }} />
-                  ))}
-                </div>
-                <span style={{ fontSize:'11px',color:sc,fontWeight:700,fontFamily:'monospace' }}>{s.an}</span>
-              </div>
-
-              <div style={{
-                fontSize:'12px',color:'#9CA3AF',lineHeight:1.5,padding:'8px 10px',
-                background:'rgba(255,255,255,0.015)',borderRadius:'7px',borderLeft:`2px solid ${sc}30`
-              }}>
-                <span style={{ color:sc,fontWeight:700,fontSize:'9px' }}>TAG </span>
-                {s.cat}
-              </div>
-            </>
-          )}
-
-          {ex && (
-            <div style={{
-              marginTop:'14px',padding:'16px',background:'rgba(0,0,0,0.3)',
-              borderRadius:'12px',animation:'fi .25s ease both'
-            }}>
-              <div style={{ fontSize:'13px',color:'#D1D5DB',lineHeight:1.7,marginBottom:'12px' }}>{s.desc}</div>
-
-              {s.vn && (
-                <div style={{
-                  fontSize:'12px',color:'#E5C84C',lineHeight:1.6,padding:'8px 10px',
-                  background:'rgba(245,158,11,0.06)',borderRadius:'7px',marginBottom:'14px',
-                  borderLeft:'2px solid rgba(245,158,11,0.3)'
-                }}>
-                  {s.vn}
-                </div>
-              )}
-
-              {s.hi > 0 && s.lo > 0 && (
-                <div style={{ display:'flex',flexWrap:'wrap',gap:'16px' }}>
-                  <div style={{ flex:'1 1 220px' }}>
-                    <div style={{ fontSize:'12px',color:'#6B7280',marginBottom:'8px' }}>12M Range</div>
-                    <TChart s={s} color={sc} />
-                  </div>
-                  <div style={{ flex:'1 1 180px' }}>
-                    <div style={{ fontSize:'12px',color:'#6B7280',marginBottom:'8px' }}>Radar</div>
-                    <Radar f={[s.fvo,s.va,s.si,s.mo,s.be,s.ou]} color={sc} />
-                  </div>
-                </div>
-              )}
-
-              <div style={{ textAlign:'center',marginTop:'8px',fontSize:'10px',color:'#555' }}>
-                Click card to collapse
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    function WinnersBar({ stocks }){
-      const sorted = [...stocks].filter(s => s.p > 0).sort((a,b) => b.ch - a.ch);
-      const top3 = sorted.slice(0,3);
-      const bot3 = [...sorted].slice(-3).reverse();
-      const obList = stocks.filter(s => s.rsi >= 70);
-      const osList = stocks.filter(s => s.rsi <= 35);
-
-      return (
-        <div style={{ padding:'16px 20px',borderBottom:'1px solid rgba(255,255,255,.06)',background:'rgba(255,255,255,0.015)' }}>
-          <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:'12px' }}>
-            <div style={{ background:'rgba(0,229,160,0.06)',border:'1px solid rgba(0,229,160,0.15)',borderRadius:'12px',padding:'14px' }}>
-              <div style={{ fontSize:'13px',color:'#6B7280',fontWeight:700,marginBottom:'8px' }}>Top Movers</div>
-              {top3.map((s,i) => (
-                <div key={s.t} style={{ display:'flex',justifyContent:'space-between',marginBottom:'5px' }}>
-                  <div style={{ display:'flex',alignItems:'center',gap:'6px' }}>
-                    <Logo ticker={s.t} name={s.n} size={20} accent="#00E5A0" />
-                    <span style={{ fontSize:i===0?'20px':'16px',fontWeight:800,fontFamily:'monospace',color:'#F0F0F0' }}>{s.t}</span>
-                  </div>
-                  <span style={{ fontSize:i===0?'22px':'16px',fontWeight:800,fontFamily:'monospace',color:'#00E5A0' }}>{s.ch.toFixed(1)}%</span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ background:'rgba(255,107,107,0.06)',border:'1px solid rgba(255,107,107,0.15)',borderRadius:'12px',padding:'14px' }}>
-              <div style={{ fontSize:'13px',color:'#6B7280',fontWeight:700,marginBottom:'8px' }}>Lagging</div>
-              {bot3.map((s,i) => (
-                <div key={s.t} style={{ display:'flex',justifyContent:'space-between',marginBottom:'5px' }}>
-                  <div style={{ display:'flex',alignItems:'center',gap:'6px' }}>
-                    <Logo ticker={s.t} name={s.n} size={20} accent="#FF6B6B" />
-                    <span style={{ fontSize:i===0?'20px':'16px',fontWeight:800,fontFamily:'monospace',color:'#F0F0F0' }}>{s.t}</span>
-                  </div>
-                  <span style={{ fontSize:i===0?'22px':'16px',fontWeight:800,fontFamily:'monospace',color:'#FF6B6B' }}>{s.ch.toFixed(1)}%</span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ background:'rgba(255,107,53,0.06)',border:'1px solid rgba(255,107,53,0.15)',borderRadius:'12px',padding:'14px' }}>
-              <div style={{ fontSize:'13px',color:'#6B7280',fontWeight:700,marginBottom:'8px' }}>RSI Hot <span style={{ fontSize:'10px',color:'#FF6B35' }}>70+</span></div>
-              {obList.length ? obList.map(s => (
-                <div key={s.t} style={{ display:'flex',justifyContent:'space-between',marginBottom:'5px' }}>
-                  <div style={{ display:'flex',alignItems:'center',gap:'6px' }}>
-                    <Logo ticker={s.t} name={s.n} size={20} accent="#FF6B35" />
-                    <span style={{ fontSize:'18px',fontWeight:800,fontFamily:'monospace',color:'#F0F0F0' }}>{s.t}</span>
-                  </div>
-                  <span style={{ fontSize:'18px',fontWeight:800,fontFamily:'monospace',color:'#FF6B35' }}>{s.rsi}</span>
-                </div>
-              )) : <div style={{ color:'#4B5563',fontSize:'12px' }}>—</div>}
-            </div>
-
-            <div style={{ background:'rgba(0,229,160,0.04)',border:'1px solid rgba(0,229,160,0.12)',borderRadius:'12px',padding:'14px' }}>
-              <div style={{ fontSize:'13px',color:'#6B7280',fontWeight:700,marginBottom:'8px' }}>RSI Cool <span style={{ fontSize:'10px',color:'#00E5A0' }}>35−</span></div>
-              {osList.length ? osList.map(s => (
-                <div key={s.t} style={{ display:'flex',justifyContent:'space-between',marginBottom:'5px' }}>
-                  <div style={{ display:'flex',alignItems:'center',gap:'6px' }}>
-                    <Logo ticker={s.t} name={s.n} size={20} accent="#00E5A0" />
-                    <span style={{ fontSize:'18px',fontWeight:800,fontFamily:'monospace',color:'#F0F0F0' }}>{s.t}</span>
-                  </div>
-                  <span style={{ fontSize:'18px',fontWeight:800,fontFamily:'monospace',color:'#00E5A0' }}>{s.rsi}</span>
-                </div>
-              )) : <div style={{ color:'#4B5563',fontSize:'12px' }}>—</div>}
-            </div>
+          <div style={{display:"flex",gap:"2px",flexWrap:"wrap"}}>
+            {SO.map(o=><button key={o.k} onClick={()=>setSort(o.k)} style={{padding:"6px 10px",borderRadius:"7px",border:sort===o.k?`1px solid ${sec.color}30`:"1px solid rgba(255,255,255,.05)",background:sort===o.k?sec.cd:"transparent",color:sort===o.k?sec.color:"#6B7280",fontSize:"11px",fontWeight:600,cursor:"pointer",outline:"none"}}>{o.l}</button>)}
           </div>
         </div>
-      );
-    }
-
-    function HeatmapView({ stocks }){
-      const ss = [...stocks].filter(s => parseMcaps(s.mc) > 0).sort((a,b) => parseMcaps(b.mc) - parseMcaps(a.mc));
-      const total = ss.reduce((a,s) => a + parseMcaps(s.mc), 0);
-
-      return (
-        <div>
-          <div style={{ fontSize:'12px',color:'#6B7280',marginBottom:'12px' }}>Size = market cap, color = daily change, ticker tile includes logo fallback.</div>
-          <div style={{ display:'flex',flexWrap:'wrap',gap:'2px' }}>
-            {ss.map(s => {
-              const pct = Math.max(parseMcaps(s.mc) / total * 100, 2.5);
-              const bg =
-                s.ch >= 2 ? 'rgba(0,229,160,0.25)' :
-                s.ch > 0 ? 'rgba(0,229,160,0.12)' :
-                s.ch <= -2 ? 'rgba(255,107,107,0.25)' :
-                s.ch < 0 ? 'rgba(255,107,107,0.12)' :
-                'rgba(255,255,255,0.04)';
-              const sc = SM[s.sec]?.color || '#888';
-
-              return (
-                <div key={s.t} style={{
-                  flex:`1 1 ${pct}%`,minWidth:'100px',minHeight:parseMcaps(s.mc) > 100 ? '100px' : '70px',
-                  background:bg,borderRadius:'4px',padding:'8px',display:'flex',flexDirection:'column',justifyContent:'space-between'
-                }} title={`${s.n} / RSI ${s.rsi}`}>
-                  <div>
-                    <div style={{ display:'flex',alignItems:'center',gap:'6px' }}>
-                      <Logo ticker={s.t} name={s.n} size={18} accent={sc} />
-                      <span style={{ fontSize:'14px',fontWeight:800,fontFamily:'monospace',color:'#F0F0F0' }}>{s.t}</span>
-                    </div>
-                    <div style={{ fontSize:'10px',color:'#9CA3AF',marginTop:'4px' }}>{s.n}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize:'13px',fontWeight:700,fontFamily:'monospace',color:s.ch > 0 ? '#00E5A0' : s.ch < 0 ? '#FF6B6B' : '#9CA3AF' }}>
-                      {s.ch > 0 ? '+' : ''}{s.ch.toFixed(2)}%
-                    </div>
-                    <div style={{ display:'flex',gap:'6px',marginTop:'4px' }}>
-                      <span style={{ fontSize:'9px',color:'#6B7280' }}>{s.mc}</span>
-                      <span style={{ fontSize:'9px',color:s.ytd > 0 ? '#00E5A0' : '#FF6B6B' }}>YTD {s.ytd > 0 ? '+' : ''}{s.ytd}%</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <Summ stocks={fs} color={sec.color}/>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:"12px"}}>
+          {fs.map((s,i)=><Card key={s.t} s={s} sc={sec.color} i={i}/>)}
         </div>
-      );
-    }
+      </>}
+    </div>
+    <div style={{padding:"14px 20px",borderTop:"1px solid rgba(255,255,255,.03)",textAlign:"center",fontSize:"10px",color:"#4B5563"}}>2026년 4월 · 투자 조언 아님</div>
+  </div>;
+}
 
-    function MatrixCell({ stocks, action }){
-      const [sel, setSel] = useState(null);
-      return (
-        <div style={{ background:action.bg,border:`1px solid ${action.c}15`,borderRadius:'8px',padding:'8px',minHeight:'80px' }}>
-          <div style={{ fontSize:'10px',fontWeight:700,color:action.c,marginBottom:'4px' }}>{action.l}</div>
-          <div style={{ display:'flex',flexWrap:'wrap',gap:'3px' }}>
-            {stocks.map(s => {
-              const sc = SM[s.sec]?.color || '#888';
-              return (
-                <div
-                  key={s.t}
-                  onClick={e => { e.stopPropagation(); setSel(sel === s.t ? null : s.t); }}
-                  style={{
-                    background:sel === s.t ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.3)',
-                    border:`1px solid ${sel === s.t ? sc : sc + '30'}`,
-                    borderRadius:'5px',padding:'3px 7px',fontSize:'11px',fontWeight:700,
-                    color:'#E5E7EB',fontFamily:'monospace',cursor:'pointer',display:'flex',alignItems:'center',gap:'4px'
-                  }}
-                >
-                  <Logo ticker={s.t} name={s.n} size={16} accent={sc} />
-                  {s.t}
-                </div>
-              );
-            })}
-          </div>
-          {sel && stocks.filter(s => s.t === sel).map(s => (
-            <div key={s.t} style={{
-              marginTop:'6px',padding:'6px 8px',background:'rgba(0,0,0,0.4)',borderRadius:'6px',
-              fontSize:'11px',color:'#E5C84C',lineHeight:1.5,borderLeft:'2px solid rgba(245,158,11,0.4)'
-            }}>
-              {s.vn || 'N/A'}
-              <div style={{ marginTop:'4px',fontSize:'10px',color:'#6B7280' }}>RSI {s.rsi} · YTD {s.ytd > 0 ? '+' : ''}{s.ytd}% · {s.mc}</div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    function MatrixView({ stocks }){
-      const ms = stocks.filter(s => s.q > 0 && s.v > 0);
-      const grid = {};
-      for(let q=1;q<=3;q++) for(let v=1;v<=3;v++) grid[`${q}-${v}`] = [];
-      ms.forEach(s => {
-        const k = `${s.q}-${s.v}`;
-        if(grid[k]) grid[k].push(s);
-      });
-
-      const MA = {
-        '3-3':{ l:'Strong Buy', c:'#00E5A0', bg:'rgba(0,229,160,0.08)' },
-        '3-2':{ l:'Buy', c:'#10b981', bg:'rgba(16,185,129,0.06)' },
-        '3-1':{ l:'Patience', c:'#f59e0b', bg:'rgba(245,158,11,0.06)' },
-        '2-3':{ l:'Buy', c:'#10b981', bg:'rgba(16,185,129,0.06)' },
-        '2-2':{ l:'Hold', c:'#a78bfa', bg:'rgba(167,139,250,0.06)' },
-        '2-1':{ l:'Avoid', c:'#ef4444', bg:'rgba(239,68,68,0.05)' },
-        '1-3':{ l:'Speculative', c:'#f59e0b', bg:'rgba(245,158,11,0.05)' },
-        '1-2':{ l:'Avoid', c:'#ef4444', bg:'rgba(239,68,68,0.05)' },
-        '1-1':{ l:'Avoid', c:'#ef4444', bg:'rgba(239,68,68,0.08)' }
-      };
-
-      return (
-        <div>
-          <div style={{ display:'grid',gridTemplateColumns:'50px 1fr 1fr 1fr',gap:'2px' }}>
-            <div></div>
-            {['Expensive','Fair','Cheap'].map((l,i) => (
-              <div key={i} style={{ textAlign:'center',padding:'6px',fontSize:'12px',fontWeight:700,color:i===2 ? '#00E5A0' : i===1 ? '#a78bfa' : '#ef4444' }}>{l}</div>
-            ))}
-            {[3,2,1].map(q => (
-              <React.Fragment key={q}>
-                <div style={{
-                  writingMode:'vertical-rl',display:'flex',alignItems:'center',justifyContent:'center',
-                  fontSize:'11px',fontWeight:700,color:q===3 ? '#00E5A0' : q===2 ? '#f59e0b' : '#ef4444',transform:'rotate(180deg)'
-                }}>
-                  {q===3 ? 'Great' : q===2 ? 'Good' : 'Bad'}
-                </div>
-                {[1,2,3].map(v => {
-                  const k = `${q}-${v}`;
-                  return <MatrixCell key={k} stocks={grid[k]} action={MA[k]} />;
-                })}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    function PerfView({ stocks }){
-      const secs = ['nuclear','power','photonics','infra','materials'];
-      return (
-        <div>
-          {secs.map(sec => {
-            const m = SM[sec];
-            const ss = [...stocks].filter(s => s.sec === sec && s.r !== 'ETF').sort((a,b) => b.ytd - a.ytd);
-            const maxAbs = Math.max(...ss.map(s => Math.abs(s.ytd || 0)), 1);
-            return (
-              <div key={sec} style={{ marginBottom:'24px' }}>
-                <div style={{ fontSize:'14px',fontWeight:700,color:m.color,marginBottom:'8px' }}>{m.icon} {m.label}</div>
-                {ss.map((s,i) => {
-                  const w = i === 0;
-                  const l = i === ss.length - 1 && ss.length > 1;
-                  return (
-                    <div key={s.t} style={{
-                      display:'flex',alignItems:'center',gap:'8px',marginBottom:'4px',padding:'6px 10px',
-                      background:w ? 'rgba(0,229,160,0.06)' : l ? 'rgba(255,107,107,0.06)' : 'transparent',
-                      borderRadius:'8px'
-                    }}>
-                      <Logo ticker={s.t} name={s.n} size={20} accent={m.color} />
-                      <span style={{ width:'55px',fontSize:'14px',fontWeight:800,fontFamily:'monospace',color:'#F0F0F0' }}>{s.t}</span>
-                      <div style={{ flex:1,height:'18px',background:'rgba(255,255,255,0.03)',borderRadius:'4px',overflow:'hidden',position:'relative' }}>
-                        <div style={{
-                          position:'absolute',
-                          left:s.ytd > 0 ? 0 : 'auto',
-                          right:s.ytd > 0 ? 'auto' : 0,
-                          height:'100%',
-                          width:`${Math.abs(s.ytd)/maxAbs*100}%`,
-                          background:s.ytd > 0 ? `linear-gradient(90deg, ${m.color}44, ${m.color})` : 'linear-gradient(90deg,#FF6B6B,#FF6B6B44)',
-                          borderRadius:'4px'
-                        }} />
-                        <span style={{
-                          position:'absolute',
-                          left:s.ytd > 0 ? `${Math.min(Math.abs(s.ytd)/maxAbs*100 + 1,85)}%` : 'auto',
-                          right:s.ytd > 0 ? 'auto' : `${Math.min(Math.abs(s.ytd)/maxAbs*100 + 1,85)}%`,
-                          top:'50%',transform:'translateY(-50%)',
-                          fontSize:'11px',fontWeight:700,color:s.ytd > 0 ? '#00E5A0' : '#FF6B6B',fontFamily:'monospace'
-                        }}>
-                          {s.ytd > 0 ? '+' : ''}{s.ytd}%
-                        </span>
-                      </div>
-                      <RsiBadge rsi={s.rsi} />
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-      );
-    }
-
-    function CorrView({ stocks }){
-      const secs = ['nuclear','power','photonics','infra','materials'];
-      const corrMatrix = {
-        nuclear:{ nuclear:1,power:0.82,photonics:0.35,infra:0.45,materials:0.55 },
-        power:{ nuclear:0.82,power:1,photonics:0.48,infra:0.65,materials:0.40 },
-        photonics:{ nuclear:0.35,power:0.48,photonics:1,infra:0.88,materials:0.20 },
-        infra:{ nuclear:0.45,power:0.65,photonics:0.88,infra:1,materials:0.30 },
-        materials:{ nuclear:0.55,power:0.40,photonics:0.20,infra:0.30,materials:1 }
-      };
-      const getColor = v => v >= .8 ? '#00E5A0' : v >= .6 ? '#4ECDC4' : v >= .4 ? '#FFD93D' : v >= .2 ? '#F97316' : '#FF6B6B';
-
-      return (
-        <div>
-          <div style={{ fontSize:'12px',color:'#6B7280',marginBottom:'16px' }}>1.0 = closest directional relationship, lower = weaker linkage.</div>
-          <div style={{ overflowX:'auto' }}>
-            <table style={{ borderCollapse:'separate',borderSpacing:'3px',margin:'0 auto' }}>
-              <thead>
-                <tr>
-                  <td style={{ width:'80px' }}></td>
-                  {secs.map(s => (
-                    <td key={s} style={{ textAlign:'center',padding:'8px',fontSize:'12px',fontWeight:700,color:SM[s].color }}>
-                      {SM[s].icon}<br />{SM[s].label}
-                    </td>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {secs.map(row => (
-                  <tr key={row}>
-                    <td style={{ fontSize:'12px',fontWeight:700,color:SM[row].color,padding:'8px',textAlign:'right' }}>{SM[row].icon} {SM[row].label}</td>
-                    {secs.map(col => {
-                      const v = corrMatrix[row][col];
-                      return (
-                        <td key={col} style={{
-                          textAlign:'center',padding:'12px 16px',borderRadius:'8px',
-                          background:`${getColor(v)}18`,border:`1px solid ${getColor(v)}25`,
-                          fontSize:'16px',fontWeight:800,fontFamily:'monospace',color:getColor(v),minWidth:'70px'
-                        }}>
-                          {v.toFixed(2)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div style={{ marginTop:'24px' }}>
-            <div style={{ fontSize:'14px',fontWeight:700,color:'#E5E7EB',marginBottom:'12px' }}>Notes</div>
-            <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:'10px' }}>
-              {[
-                { title:'Photonics ↔ AI Infra', val:'0.88', color:'#00E5A0', note:'Networking, optics, modules, and bandwidth scale together.' },
-                { title:'Nuclear ↔ AI Power', val:'0.82', color:'#00E5A0', note:'AI electricity demand and firm power narratives reinforce each other.' },
-                { title:'Power ↔ AI Infra', val:'0.65', color:'#4ECDC4', note:'Data-center growth pulls both power capex and infrastructure capex.' },
-                { title:'Materials ↔ Photonics', val:'0.20', color:'#FF6B6B', note:'Materials exposure is broader and less tightly linked to optical cycles.' }
-              ].map((item,i) => (
-                <div key={i} style={{ background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'10px',padding:'14px' }}>
-                  <div style={{ display:'flex',justifyContent:'space-between',marginBottom:'6px' }}>
-                    <span style={{ fontSize:'13px',fontWeight:700,color:'#E5E7EB' }}>{item.title}</span>
-                    <span style={{ fontSize:'16px',fontWeight:800,fontFamily:'monospace',color:item.color }}>{item.val}</span>
-                  </div>
-                  <div style={{ fontSize:'11px',color:'#9CA3AF',lineHeight:1.5 }}>{item.note}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    function NewsView({ apiKey }){
-      const [sym,setSym] = useState('NVDA');
-      const [news,setNews] = useState([]);
-      const [loading,setLoading] = useState(false);
-      const [input,setInput] = useState('NVDA');
-      const tickers = initS.filter(s => s.r !== 'ETF').map(s => s.t);
-
-      const load = useCallback(async s => {
-        if(!apiKey){ setNews([]); return; }
-        setLoading(true);
-        const data = await fhNews(s,apiKey);
-        setNews(data);
-        setLoading(false);
-      },[apiKey]);
-
-      useEffect(() => { load(sym); },[sym,apiKey]);
-
-      return (
-        <div>
-          {!apiKey && (
-            <div style={{
-              padding:'20px',background:'rgba(255,107,53,0.08)',border:'1px solid rgba(255,107,53,0.2)',
-              borderRadius:'12px',marginBottom:'16px',fontSize:'13px',color:'#FF6B35'
-            }}>
-              Finnhub API key required for live news.
-            </div>
-          )}
-
-          <div style={{ display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'16px' }}>
-            {tickers.slice(0,20).map(t => (
-              <button
-                key={t}
-                onClick={() => { setSym(t); setInput(t); }}
-                style={{
-                  padding:'5px 10px',borderRadius:'6px',
-                  border:sym === t ? '1px solid #38BDF8' : '1px solid rgba(255,255,255,0.06)',
-                  background:sym === t ? 'rgba(56,189,248,0.12)' : 'transparent',
-                  color:sym === t ? '#38BDF8' : '#6B7280',
-                  fontSize:'12px',fontWeight:600,cursor:'pointer',outline:'none'
-                }}
-              >
-                {t}
-              </button>
-            ))}
-            <input
-              value={input}
-              onChange={e => setInput(e.target.value.toUpperCase())}
-              onKeyDown={e => { if(e.key === 'Enter') setSym(input); }}
-              placeholder="Ticker"
-              style={{
-                padding:'5px 10px',borderRadius:'6px',border:'1px solid rgba(255,255,255,0.08)',
-                background:'rgba(255,255,255,0.03)',color:'#E5E7EB',fontSize:'12px',width:'100px',outline:'none'
-              }}
-            />
-          </div>
-
-          <div style={{ fontSize:'16px',fontWeight:800,color:'#38BDF8',marginBottom:'12px',fontFamily:'monospace',display:'flex',alignItems:'center',gap:'8px' }}>
-            {sym} {loading && <span className="spinner" />}
-          </div>
-
-          {news.length ? news.map((n,i) => (
-            <a
-              key={i}
-              href={n.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display:'block',padding:'14px',background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.05)',
-                borderRadius:'10px',marginBottom:'8px',textDecoration:'none',transition:'border-color .2s'
-              }}
-              onMouseOver={e => e.currentTarget.style.borderColor = 'rgba(56,189,248,0.3)'}
-              onMouseOut={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'}
-            >
-              <div style={{ display:'flex',justifyContent:'space-between',marginBottom:'4px',gap:'8px' }}>
-                <span style={{ fontSize:'13px',fontWeight:700,color:'#E5E7EB' }}>
-                  {n.headline?.slice(0,80)}{n.headline?.length > 80 ? '...' : ''}
-                </span>
-                <span style={{ fontSize:'10px',color:'#6B7280',whiteSpace:'nowrap' }}>
-                  {n.datetime ? new Date(n.datetime*1000).toLocaleDateString('en-US') : ''}
-                </span>
-              </div>
-              <div style={{ fontSize:'11px',color:'#9CA3AF' }}>
-                {n.summary?.slice(0,120)}{n.summary?.length > 120 ? '...' : ''}
-              </div>
-              <div style={{ fontSize:'10px',color:'#6B7280',marginTop:'4px' }}>{n.source}</div>
-            </a>
-          )) : (
-            <div style={{ padding:'30px',textAlign:'center',color:'#4B5563' }}>
-              {apiKey ? 'No recent news found.' : 'Add API key to load live news.'}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    function Summ({ stocks, color }){
-      const ne = stocks.filter(x => x.r !== 'ETF');
-      const wp = stocks.filter(x => x.p > 0);
-      const au = ne.length ? Math.round(ne.reduce((a,x) => a + x.tu, 0) / ne.length) : 0;
-      const ac = wp.length ? (wp.reduce((a,x) => a + x.ch, 0) / wp.length).toFixed(2) : '0.00';
-      const tg = [...ne].sort((a,b) => b.rg - a.rg)[0];
-
-      const items = [
-        { l:'Stocks', v:stocks.length },
-        { l:'Avg Upside', v:`${au}%` },
-        { l:'Avg Chg', v:`${Number(ac) > 0 ? '+' : ''}${ac}%` },
-        { l:'Top Rev', v:tg ? tg.t : '—' }
-      ];
-
-      return (
-        <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(100px,1fr))',gap:'1px',background:'rgba(255,255,255,0.035)',borderRadius:'10px',overflow:'hidden',marginBottom:'16px' }}>
-          {items.map((m,i) => (
-            <div key={i} style={{ background:'#0C0E13',padding:'12px 8px',textAlign:'center' }}>
-              <div style={{ fontSize:'10px',color:'#6B7280',marginBottom:'4px',textTransform:'uppercase' }}>{m.l}</div>
-              <div style={{ fontSize:'18px',fontWeight:800,color:color,fontFamily:'monospace' }}>{m.v}</div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    function App(){
-      const [tab,setTab] = useState('nuclear');
-      const [sort,setSort] = useState('default');
-      const [q,setQ] = useState('');
-      const [apiKey,setApiKey] = useState(localStorage.getItem('fhkey') || '');
-      const [showSettings,setShowSettings] = useState(false);
-      const [keyInput,setKeyInput] = useState(apiKey);
-      const [stocks,setStocks] = useState(initS);
-      const [fetching,setFetching] = useState(false);
-      const [lastUpdate,setLastUpdate] = useState(null);
-      const timerRef = useRef(null);
-
-      const sec = SM[tab];
-      const isSpecial = ['heatmap','matrix','perf','corr','news'].includes(tab);
-      const ss = stocks.filter(s => s.sec === tab);
-
-      const SO = [
-        { k:'default', l:'Default' },
-        { k:'change', l:'Change' },
-        { k:'ytd', l:'YTD' },
-        { k:'targetUpside', l:'Target' },
-        { k:'rsi', l:'RSI' }
-      ];
-
-      const fetchAll = useCallback(async () => {
-        if(!apiKey) return;
-        setFetching(true);
-        const updated = [...stocks];
-
-        for(let i=0;i<updated.length;i++){
-          const s = updated[i];
-          if(s.r === 'ETF' || !String(s.t).match(/^[A-Z]{1,5}$/)) continue;
-          const quote = await fhQuote(s.t, apiKey);
-          if(quote && quote.price > 0){
-            updated[i] = { ...s, p:quote.price, ch:quote.changePct || 0 };
-          }
-          if(i === 28 || i === 56) await delay(60000);
-        }
-
-        setStocks(updated);
-        setLastUpdate(new Date().toLocaleTimeString('en-US'));
-        setFetching(false);
-      },[apiKey,stocks]);
-
-      useEffect(() => {
-        if(apiKey){
-          fetchAll();
-          timerRef.current = setInterval(fetchAll, 5 * 60 * 1000);
-        }
-        return () => {
-          if(timerRef.current) clearInterval(timerRef.current);
-        };
-      },[apiKey]);
-
-      const saveKey = () => {
-        localStorage.setItem('fhkey', keyInput);
-        setApiKey(keyInput);
-        setShowSettings(false);
-      };
-
-      const fs = useMemo(() => {
-        let st = [...ss];
-        if(q){
-          const ql = q.toLowerCase();
-          st = st.filter(s =>
-            s.t.toLowerCase().includes(ql) ||
-            s.n.toLowerCase().includes(ql) ||
-            s.sub.toLowerCase().includes(ql)
-          );
-        }
-        if(sort === 'change') st.sort((a,b) => b.ch - a.ch);
-        else if(sort === 'ytd') st.sort((a,b) => b.ytd - a.ytd);
-        else if(sort === 'targetUpside') st.sort((a,b) => b.tu - a.tu);
-        else if(sort === 'rsi') st.sort((a,b) => b.rsi - a.rsi);
-        return st;
-      },[tab,sort,q,stocks]);
-
-      return (
-        <div style={{ minHeight:'100vh',background:'#080A0F',color:'#E5E7EB',fontFamily:'Inter, system-ui, sans-serif' }}>
-          <div
+ReactDOM.render(<App/>,document.getElementById('root'));
+</script>
+</body>
+</html>
