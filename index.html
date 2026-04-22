@@ -393,7 +393,7 @@ function App(){
   },[apiKey,stocks]);
 
   useEffect(()=>{
-    if(apiKey){fetchAll();timerRef.current=setInterval(fetchAll,5*60*1000)}
+    if(apiKey){fetchAll();timerRef.current=setInterval(fetchAll,30*1000)}
     return()=>{if(timerRef.current)clearInterval(timerRef.current)};
   },[apiKey]);
 
