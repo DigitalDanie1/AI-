@@ -102,8 +102,55 @@ function delay(ms){return new Promise(r=>setTimeout(r,ms))}
 
 // ── Logos ──
 const LDOM={CEG:'constellation.com',CCJ:'cameco.com',OKLO:'oklo.com',LEU:'centrusenergy.com',UEC:'uraniumenergy.com',SMR:'nuscalepower.com',NNE:'nanonuclearenergy.com',DNN:'denisonmines.com',UUUU:'energyfuels.com',GEV:'gevernova.com',BE:'bloomenergy.com',WULF:'terawulf.com',NBIS:'nebius.com',APD:'airproducts.com',LIN:'linde.com',LITE:'lumentum.com',COHR:'coherent.com',MRVL:'marvell.com',FN:'fabrinet.com',MTSI:'macom.com',MKSI:'mksinst.com',IPGP:'ipgphotonics.com',AAOI:'ao-inc.com',NVDA:'nvidia.com',INTC:'intel.com',ORCL:'oracle.com',AVGO:'broadcom.com',VRT:'vertiv.com',APH:'amphenol.com',DELL:'dell.com',CRDO:'credosemi.com',EME:'emcorgroup.com',FCX:'fcx.com',SCCO:'southerncoppercorp.com',LAC:'lithiumamericas.com',BHP:'bhp.com',SBSW:'sibanyestillwater.com',VAL:'valaris.com',XPRO:'expro.com',URA:'globalxetfs.com',URNM:'sprott.com',PALL:'abrdn.com',CRWV:'coreweave.com',CORZ:'corescientific.com',IREN:'iren.com',APLD:'applieddigital.com',SNDK:'westerndigital.com',CIFR:'ciphermining.com',TSEM:'towersemi.com',RIOT:'riotplatforms.com',KRC:'kilroyrealty.com',HUT:'hut8.com',BTDR:'bitdeer.com',CLSK:'cleanspark.com',LBRT:'libertyenergy.com',INFY:'infosys.com',BW:'babcock.com',SEI:'solarisoilfield.com',WYFI:'wy-fi.com',PSIX:'psiengines.com',KEEL:'keelco.com',PUMP:'propetroservices.com'};
-function Logo({t,sc,sz}){const s=sz||32;const d=LDOM[t];if(!d)return <div style={{width:s,height:s,borderRadius:"50%",background:`linear-gradient(135deg,${sc}28,rgba(255,255,255,0.06))`,border:`1px solid ${sc}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:s>28?11:9,fontWeight:800,color:sc,flexShrink:0}}>{t.slice(0,2)}</div>;return <div style={{width:s,height:s,borderRadius:"50%",overflow:"hidden",border:"1px solid rgba(255,255,255,0.12)",background:"#fff",flexShrink:0}}><img src={`https://www.google.com/s2/favicons?sz=128&domain=${d}`} alt={t} style={{width:"100%",height:"100%",objectFit:"contain",padding:2}}/></div>}
+function Logo({t,sc,sz}){
+  const [failed,setFailed]=useState(false);
+  const s=sz||32;
+  const d=LDOM[t];
 
+  if(!d || failed){
+    return (
+      <div
+        style={{
+          width:s,
+          height:s,
+          borderRadius:"50%",
+          background:`linear-gradient(135deg, ${sc}28, rgba(255,255,255,0.06))`,
+          border:`1px solid ${sc}30`,
+          display:"flex",
+          alignItems:"center",
+          justifyContent:"center",
+          fontSize:s>28?11:9,
+          fontWeight:800,
+          color:sc,
+          flexShrink:0
+        }}
+      >
+        {t.slice(0,2)}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        width:s,
+        height:s,
+        borderRadius:"50%",
+        overflow:"hidden",
+        border:"1px solid rgba(255,255,255,0.12)",
+        background:"#fff",
+        flexShrink:0
+      }}
+    >
+      <img
+        src={`https://icons.duckduckgo.com/ip3/${d}.ico`}
+        alt={t}
+        style={{width:"100%",height:"100%",objectFit:"contain",padding:2}}
+        onError={()=>setFailed(true)}
+      />
+    </div>
+  );
+}
 // ── Shared components ──
 function RsiBadge({rsi}){if(!rsi)return null;const ob=rsi>=70,os=rsi<=30,hot=rsi>=60,cold=rsi<=40;const c=ob?"#FF6B6B":os?"#00E5A0":hot?"#FFD93D":cold?"#4ECDC4":"#6B7280";const l=ob?"과매수":os?"과매도":hot?"강세":cold?"약세":"중립";return <span style={{fontSize:"10px",padding:"2px 6px",borderRadius:"4px",background:c+"18",color:c,border:`1px solid ${c}30`,fontWeight:600}}>RSI {rsi} {l}</span>}
 function Bar({val,mx,c,lb}){return <div style={{marginBottom:"5px"}}><div style={{display:"flex",justifyContent:"space-between",fontSize:"11px",color:"#8A8F98",marginBottom:"2px"}}><span>{lb}</span><span style={{color:val>0?c:val===0?"#555":"#FF6B6B",fontWeight:600,fontFamily:"monospace"}}>{val>0?`+${val}%`:val===0?"—":`${val}%`}</span></div><div style={{height:"4px",background:"rgba(255,255,255,0.04)",borderRadius:"2px"}}><div style={{height:"100%",width:`${Math.min((Math.abs(val)/mx)*100,100)}%`,borderRadius:"2px",background:`linear-gradient(90deg,${c}88,${c})`}}/></div></div>}
@@ -360,118 +407,478 @@ function Summ({stocks,color}){const ne=stocks.filter(x=>x.r!=="ETF"),wp=stocks.f
 
 // ── Main App ──
 function App(){
-  const[tab,setTab]=useState("nuclear");
-  const[sort,setSort]=useState("default");
-  const[q,setQ]=useState("");
-  const[apiKey,setApiKey]=useState(()=>localStorage.getItem("fh_key")||"");
-  const[showSettings,setShowSettings]=useState(false);
-  const[keyInput,setKeyInput]=useState(apiKey);
-  const[stocks,setStocks]=useState(initS);
-  const[fetching,setFetching]=useState(false);
-  const[lastUpdate,setLastUpdate]=useState(null);
-  const timerRef=useRef(null);
+  const [tab,setTab]=useState("nuclear");
+  const [sort,setSort]=useState("default");
+  const [q,setQ]=useState("");
+  const [apiKey,setApiKey]=useState(localStorage.getItem("fh_key")||"");
+  const [showSettings,setShowSettings]=useState(false);
+  const [keyInput,setKeyInput]=useState(localStorage.getItem("fh_key")||"");
+  const [stocks,setStocks]=useState(initS);
+  const [fetching,setFetching]=useState(false);
+  const [lastUpdate,setLastUpdate]=useState("");
+  const [progress,setProgress]=useState({done:0,total:0,batch:0,batches:0,current:""});
 
-  const sec=SM[tab];const isSpecial=["heatmap","matrix","perf","sa","snap","news"].includes(tab);
-  const ss=stocks.filter(s=>s.sec===tab);
-  const SO=[{k:"default",l:"기본"},{k:"change",l:"등락률"},{k:"ytd",l:"YTD"},{k:"targetUpside",l:"상승여력"},{k:"rsi",l:"RSI"}];
+  const sec=SM[tab]||SM.nuclear;
+  const isSpecial=["heatmap","matrix","perf","sa","snap","news"].includes(tab);
 
-  // Fetch live prices
-  const fetchAll=useCallback(async()=>{
-    if(!apiKey)return;
-    setFetching(true);
-    const updated=[...stocks];
-    for(let i=0;i<updated.length;i++){
-      const s=updated[i];
-      if(s.r==="ETF"&&!s.t.match(/^[A-Z]{1,5}$/))continue;
-      const quote=await fhQuote(s.t,apiKey);
-      if(quote&&quote.price>0){updated[i]={...s,p:quote.price,ch:quote.changePct||0}}
-      if(i%28===27)await delay(60000); // rate limit
+  const sortOptions=[
+    {l:"Default",k:"default"},
+    {l:"Change",k:"change"},
+    {l:"YTD",k:"ytd"},
+    {l:"Target Upside",k:"targetUpside"},
+    {l:"RSI",k:"rsi"}
+  ];
+
+  const sectionStocks=useMemo(()=>{
+    return stocks.filter(s=>s.sec===tab);
+  },[stocks,tab]);
+
+  const filteredStocks=useMemo(()=>{
+    let st=[...sectionStocks];
+
+    if(q){
+      const ql=q.toLowerCase();
+      st=st.filter(s=>
+        s.t.toLowerCase().includes(ql) ||
+        s.n.toLowerCase().includes(ql) ||
+        (s.sub||"").toLowerCase().includes(ql)
+      );
     }
-    setStocks(updated);
-    setLastUpdate(new Date().toLocaleTimeString("ko"));
-    setFetching(false);
-  },[apiKey,stocks]);
 
-  useEffect(()=>{
-    if(apiKey){fetchAll();timerRef.current=setInterval(fetchAll,30*1000)}
-    return()=>{if(timerRef.current)clearInterval(timerRef.current)};
-  },[apiKey]);
+    if(sort==="change") st.sort((a,b)=>(b.ch||0)-(a.ch||0));
+    else if(sort==="ytd") st.sort((a,b)=>(b.ytd||0)-(a.ytd||0));
+    else if(sort==="targetUpside") st.sort((a,b)=>(b.tu||0)-(a.tu||0));
+    else if(sort==="rsi") st.sort((a,b)=>(b.rsi||0)-(a.rsi||0));
 
-  const saveKey=()=>{localStorage.setItem("fh_key",keyInput);setApiKey(keyInput);setShowSettings(false)};
-
-  const fs=useMemo(()=>{
-    let st=[...ss];
-    if(q){const ql=q.toLowerCase();st=st.filter(s=>s.t.toLowerCase().includes(ql)||s.n.toLowerCase().includes(ql))}
-    if(sort==="change")st.sort((a,b)=>b.ch-a.ch);else if(sort==="ytd")st.sort((a,b)=>b.ytd-a.ytd);else if(sort==="targetUpside")st.sort((a,b)=>b.tu-a.tu);else if(sort==="rsi")st.sort((a,b)=>b.rsi-a.rsi);
     return st;
-  },[tab,sort,q,stocks]);
+  },[sectionStocks,q,sort]);
 
-  return <div style={{minHeight:"100vh",background:"#080A0F",color:"#E5E7EB",fontFamily:"'Inter',system-ui,sans-serif"}}>
-    {/* Header */}
-    <div style={{padding:"20px 20px 10px",borderBottom:"1px solid rgba(255,255,255,.04)",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-      <div>
-        <div style={{display:"flex",alignItems:"center",gap:"7px",marginBottom:"3px"}}>
-          <div style={{width:"7px",height:"7px",borderRadius:"50%",background:sec.color,animation:"pl 2s infinite",boxShadow:`0 0 8px ${sec.color}50`}}/>
-          <span style={{fontSize:"11px",color:"#6B7280",textTransform:"uppercase",letterSpacing:"1.5px",fontWeight:600}}>AI Only</span>
-          {fetching&&<span className="spinner"/>}
-          {lastUpdate&&<span style={{fontSize:"10px",color:"#4B5563"}}>· 갱신 {lastUpdate}</span>}
-        </div>
-        <h1 style={{fontSize:"24px",fontWeight:800,margin:"5px 0 3px",background:`linear-gradient(135deg,${sec.color},#fff,${sec.color})`,backgroundSize:"200% 200%",animation:"gl 4s ease infinite",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>AI 섹터 종합 대시보드</h1>
-        <p style={{fontSize:"13px",color:"#6B7280"}}>{stocks.length}종목 · 10탭 · 2026.04.18</p>
-      </div>
-      <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-        {apiKey&&<button onClick={fetchAll} disabled={fetching} style={{padding:"6px 12px",borderRadius:"8px",border:"1px solid rgba(0,229,255,0.2)",background:"rgba(0,229,255,0.08)",color:"#00E5FF",fontSize:"12px",fontWeight:600,cursor:"pointer",outline:"none"}}>{fetching?"갱신중...":"↻ 새로고침"}</button>}
-        <button onClick={()=>setShowSettings(!showSettings)} style={{padding:"6px 12px",borderRadius:"8px",border:"1px solid rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.04)",color:"#9CA3AF",fontSize:"12px",cursor:"pointer",outline:"none"}}>⚙️ API</button>
-      </div>
-    </div>
+  const saveKey=()=>{
+    const next=(keyInput||"").trim();
+    localStorage.setItem("fh_key",next);
+    setApiKey(next);
+    setShowSettings(false);
+  };
 
-    {/* Settings */}
-    {showSettings&&<div style={{padding:"12px 20px",background:"rgba(0,229,255,0.04)",borderBottom:"1px solid rgba(0,229,255,0.1)",animation:"fi .2s ease"}}>
-      <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
-        <span style={{fontSize:"12px",color:"#00E5FF",fontWeight:600}}>Finnhub API Key:</span>
-        <input value={keyInput} onChange={e=>setKeyInput(e.target.value)} type="password" placeholder="cxxxxxxxxxx" style={{padding:"6px 10px",borderRadius:"6px",border:"1px solid rgba(0,229,255,0.2)",background:"rgba(0,0,0,0.3)",color:"#E5E7EB",fontSize:"12px",width:"260px",outline:"none"}}/>
-        <button onClick={saveKey} style={{padding:"6px 14px",borderRadius:"6px",background:"#00E5FF",color:"#000",fontSize:"12px",fontWeight:700,cursor:"pointer",border:"none"}}>저장</button>
-        <span style={{fontSize:"10px",color:"#6B7280"}}>무료: <a href="https://finnhub.io/register" target="_blank" style={{color:"#00E5FF"}}>finnhub.io</a> (30 calls/min)</span>
-      </div>
-    </div>}
+  const clearKey=()=>{
+    localStorage.removeItem("fh_key");
+    setApiKey("");
+    setKeyInput("");
+    setShowSettings(false);
+  };
 
-    <WinnersBar stocks={stocks}/>
+  const fetchAll=useCallback(async()=>{
+    const cleanKey=(apiKey||"").trim();
+    if(!cleanKey || fetching) return;
 
-    {/* Tabs */}
-    <div style={{display:"flex",gap:"2px",padding:"8px 20px",overflowX:"auto",borderBottom:"1px solid rgba(255,255,255,.03)"}}>
-      {Object.entries(SM).map(([k,s])=>{const a=k===tab;
-        return <button key={k} onClick={()=>{setTab(k);setSort("default");setQ("")}} style={{display:"flex",alignItems:"center",gap:"4px",padding:"7px 12px",borderRadius:"8px",border:a?`1px solid ${s.color}40`:"1px solid transparent",background:a?s.cd:"transparent",color:a?s.color:"#6B7280",fontSize:"12px",fontWeight:a?700:500,cursor:"pointer",whiteSpace:"nowrap",outline:"none"}}><span style={{fontSize:"14px"}}>{s.icon}</span>{s.label}</button>})}
-    </div>
+    const updated=[...stocks];
+    const tradables=updated
+      .map((s,index)=>({s,index}))
+      .filter(({s})=>/^[A-Z]{1,5}$/.test(s.t));
 
-    {/* Content */}
-    <div style={{padding:"14px 20px"}}>
-      <p style={{fontSize:"13px",color:"#9CA3AF",marginBottom:"12px"}}><span style={{color:sec.color,fontWeight:700}}>{sec.icon} {sec.label}</span> — {sec.desc}</p>
-      {tab==="heatmap"?<HeatmapView stocks={stocks}/>
-      :tab==="matrix"?<MatrixView stocks={stocks}/>
-      :tab==="perf"?<PerfView stocks={stocks}/>
-      :tab==="sa"?<SAView/>
-      :tab==="snap"?<SnapView stocks={stocks}/>
-      :tab==="news"?<NewsView apiKey={apiKey}/>
-      :<>
+    const batchSize=28;
+    const total=tradables.length;
+    const totalBatches=Math.ceil(total/batchSize);
+
+    setFetching(true);
+    setProgress({done:0,total,batch:0,batches:totalBatches,current:""});
+
+    try{
+      for(let batchIndex=0; batchIndex<totalBatches; batchIndex++){
+        const batch=tradables.slice(batchIndex*batchSize,(batchIndex+1)*batchSize);
+
+        setProgress(prev=>({
+          ...prev,
+          batch:batchIndex+1,
+          current:batch[0]?.s?.t||""
+        }));
+
+        const results=await Promise.all(
+          batch.map(async({s,index})=>{
+            const quote=await fhQuote(s.t,cleanKey);
+            return {index,quote};
+          })
+        );
+
+        results.forEach(({index,quote})=>{
+          if(quote && quote.price>0){
+            updated[index]={
+              ...updated[index],
+              p:quote.price,
+              ch:quote.changePct||0
+            };
+          }
+        });
+
+        const done=Math.min((batchIndex+1)*batchSize,total);
+        setStocks([...updated]);
+        setProgress(prev=>({
+          ...prev,
+          done,
+          current:batch[batch.length-1]?.s?.t||prev.current
+        }));
+
+        if(batchIndex<totalBatches-1){
+          await delay(60000);
+        }
+      }
+
+      setLastUpdate(
+        new Date().toLocaleString("ko-KR",{
+          year:"numeric",
+          month:"2-digit",
+          day:"2-digit",
+          hour:"2-digit",
+          minute:"2-digit",
+          second:"2-digit",
+          hour12:false
+        })
+      );
+    }finally{
+      setFetching(false);
+      setProgress({done:0,total:0,batch:0,batches:0,current:""});
+    }
+  },[apiKey,stocks,fetching]);
+
+  const renderContent=()=>{
+    if(tab==="heatmap") return <HeatmapView stocks={stocks}/>;
+    if(tab==="matrix") return <MatrixView stocks={stocks}/>;
+    if(tab==="perf") return <PerfView stocks={stocks}/>;
+    if(tab==="sa") return <SAView/>;
+    if(tab==="snap") return <SnapView stocks={stocks}/>;
+    if(tab==="news") return <NewsView apiKey={apiKey}/>;
+
+    return (
+      <>
         <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"16px"}}>
-          <div style={{flex:"1 1 160px",position:"relative"}}>
-            <input type="text" placeholder="검색..." value={q} onChange={e=>setQ(e.target.value)} style={{width:"100%",padding:"8px 10px 8px 30px",borderRadius:"8px",border:"1px solid rgba(255,255,255,.07)",background:"rgba(255,255,255,.025)",color:"#E5E7EB",fontSize:"13px",outline:"none"}}/>
-            <span style={{position:"absolute",left:"9px",top:"50%",transform:"translateY(-50%)",fontSize:"12px",opacity:.3}}>🔍</span>
+          <div style={{flex:"1 1 180px",position:"relative"}}>
+            <input
+              type="text"
+              placeholder="티커 / 회사명 검색"
+              value={q}
+              onChange={e=>setQ(e.target.value)}
+              style={{
+                width:"100%",
+                padding:"8px 10px 8px 30px",
+                borderRadius:"8px",
+                border:"1px solid rgba(255,255,255,.07)",
+                background:"rgba(255,255,255,.025)",
+                color:"#E5E7EB",
+                fontSize:"13px",
+                outline:"none"
+              }}
+            />
+            <span
+              style={{
+                position:"absolute",
+                left:"9px",
+                top:"50%",
+                transform:"translateY(-50%)",
+                fontSize:"12px",
+                opacity:.35
+              }}
+            >
+              ⌕
+            </span>
           </div>
-          <div style={{display:"flex",gap:"2px",flexWrap:"wrap"}}>
-            {SO.map(o=><button key={o.k} onClick={()=>setSort(o.k)} style={{padding:"6px 10px",borderRadius:"7px",border:sort===o.k?`1px solid ${sec.color}30`:"1px solid rgba(255,255,255,.05)",background:sort===o.k?sec.cd:"transparent",color:sort===o.k?sec.color:"#6B7280",fontSize:"11px",fontWeight:600,cursor:"pointer",outline:"none"}}>{o.l}</button>)}
-          </div>
-        </div>
-        <Summ stocks={fs} color={sec.color}/>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:"12px"}}>
-          {fs.map((s,i)=><Card key={s.t} s={s} sc={sec.color} i={i}/>)}
-        </div>
-      </>}
-    </div>
-    <div style={{padding:"14px 20px",borderTop:"1px solid rgba(255,255,255,.03)",textAlign:"center",fontSize:"10px",color:"#4B5563"}}>2026년 4월 · 투자 조언 아님</div>
-  </div>;
-}
 
+          <div style={{display:"flex",gap:"2px",flexWrap:"wrap"}}>
+            {sortOptions.map(o=>(
+              <button
+                key={o.k}
+                onClick={()=>setSort(o.k)}
+                style={{
+                  padding:"6px 10px",
+                  borderRadius:"7px",
+                  border:sort===o.k?`1px solid ${sec.color}30`:"1px solid rgba(255,255,255,.05)",
+                  background:sort===o.k?sec.cd:"transparent",
+                  color:sort===o.k?sec.color:"#6B7280",
+                  fontSize:"11px",
+                  fontWeight:600,
+                  cursor:"pointer",
+                  outline:"none"
+                }}
+              >
+                {o.l}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <Summ stocks={filteredStocks} color={sec.color}/>
+
+        <div
+          style={{
+            display:"grid",
+            gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",
+            gap:"12px"
+          }}
+        >
+          {filteredStocks.map((s,i)=>(
+            <Card key={s.t} s={s} sc={sec.color} i={i}/>
+          ))}
+        </div>
+      </>
+    );
+  };
+
+  return (
+    <div style={{minHeight:"100vh",background:"#080A0F",color:"#E5E7EB",fontFamily:"Inter,system-ui,sans-serif"}}>
+      <div
+        style={{
+          padding:"20px 20px 10px",
+          borderBottom:"1px solid rgba(255,255,255,.04)",
+          display:"flex",
+          justifyContent:"space-between",
+          alignItems:"flex-start",
+          gap:"12px",
+          flexWrap:"wrap"
+        }}
+      >
+        <div>
+          <div style={{display:"flex",alignItems:"center",gap:"7px",marginBottom:"3px",flexWrap:"wrap"}}>
+            <div
+              style={{
+                width:"7px",
+                height:"7px",
+                borderRadius:"50%",
+                background:sec.color,
+                animation:"pl 2s infinite",
+                boxShadow:`0 0 8px ${sec.color}50`
+              }}
+            />
+            <span
+              style={{
+                fontSize:"11px",
+                color:"#6B7280",
+                textTransform:"uppercase",
+                letterSpacing:"1.5px",
+                fontWeight:600
+              }}
+            >
+              AI Only
+            </span>
+
+            {fetching && <span className="spinner" />}
+
+            {lastUpdate && (
+              <span style={{fontSize:"10px",color:"#4B5563"}}>
+                마지막 업데이트 {lastUpdate}
+              </span>
+            )}
+          </div>
+
+          <h1
+            style={{
+              fontSize:"24px",
+              fontWeight:800,
+              margin:"5px 0 3px",
+              background:`linear-gradient(135deg, ${sec.color}, #fff, ${sec.color})`,
+              backgroundSize:"200% 200%",
+              animation:"gl 4s ease infinite",
+              WebkitBackgroundClip:"text",
+              WebkitTextFillColor:"transparent"
+            }}
+          >
+            {sec.icon} {sec.label}
+          </h1>
+
+          <p style={{fontSize:"13px",color:"#6B7280"}}>
+            {stocks.length} stocks / manual refresh only
+          </p>
+
+          {fetching && (
+            <div
+              style={{
+                marginTop:"8px",
+                fontSize:"12px",
+                color:"#9CA3AF",
+                lineHeight:1.6
+              }}
+            >
+              업데이트 중: {progress.done}/{progress.total}
+              {progress.batches ? ` / batch ${progress.batch}/${progress.batches}` : ""}
+              {progress.current ? ` / ${progress.current}` : ""}
+            </div>
+          )}
+        </div>
+
+        <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
+          <button
+            onClick={fetchAll}
+            disabled={!apiKey || fetching}
+            style={{
+              padding:"6px 12px",
+              borderRadius:"8px",
+              border:"1px solid rgba(0,229,255,0.2)",
+              background:!apiKey?"rgba(255,255,255,0.04)":"rgba(0,229,255,0.08)",
+              color:!apiKey?"#6B7280":"#00E5FF",
+              fontSize:"12px",
+              fontWeight:600,
+              cursor:(!apiKey || fetching)?"not-allowed":"pointer",
+              outline:"none",
+              opacity:(!apiKey || fetching)?0.65:1
+            }}
+          >
+            {fetching ? "업데이트 중..." : "수동 업데이트"}
+          </button>
+
+          <button
+            onClick={()=>setShowSettings(v=>!v)}
+            style={{
+              padding:"6px 12px",
+              borderRadius:"8px",
+              border:"1px solid rgba(255,255,255,0.08)",
+              background:"rgba(255,255,255,0.04)",
+              color:"#9CA3AF",
+              fontSize:"12px",
+              cursor:"pointer",
+              outline:"none"
+            }}
+          >
+            API
+          </button>
+        </div>
+      </div>
+
+      {showSettings && (
+        <div
+          style={{
+            padding:"12px 20px",
+            background:"rgba(0,229,255,0.04)",
+            borderBottom:"1px solid rgba(0,229,255,0.1)",
+            animation:"fi .2s ease"
+          }}
+        >
+          <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
+            <span style={{fontSize:"12px",color:"#00E5FF",fontWeight:600}}>
+              Finnhub API Key
+            </span>
+
+            <input
+              value={keyInput}
+              onChange={e=>setKeyInput(e.target.value)}
+              type="password"
+              placeholder="cxxxxxxxxxx"
+              style={{
+                padding:"6px 10px",
+                borderRadius:"6px",
+                border:"1px solid rgba(0,229,255,0.2)",
+                background:"rgba(0,0,0,0.3)",
+                color:"#E5E7EB",
+                fontSize:"12px",
+                width:"260px",
+                outline:"none"
+              }}
+            />
+
+            <button
+              onClick={saveKey}
+              style={{
+                padding:"6px 14px",
+                borderRadius:"6px",
+                background:"#00E5FF",
+                color:"#000",
+                fontSize:"12px",
+                fontWeight:700,
+                cursor:"pointer",
+                border:"none"
+              }}
+            >
+              저장
+            </button>
+
+            <button
+              onClick={clearKey}
+              style={{
+                padding:"6px 14px",
+                borderRadius:"6px",
+                background:"rgba(255,255,255,0.08)",
+                color:"#9CA3AF",
+                fontSize:"12px",
+                fontWeight:600,
+                cursor:"pointer",
+                border:"1px solid rgba(255,255,255,0.08)"
+              }}
+            >
+              삭제
+            </button>
+
+            <span style={{fontSize:"10px",color:"#6B7280"}}>
+              무료 플랜 기준 수동 업데이트 전용
+            </span>
+          </div>
+        </div>
+      )}
+
+      <WinnersBar stocks={stocks}/>
+
+      <div
+        style={{
+          display:"flex",
+          gap:"2px",
+          padding:"8px 20px",
+          overflowX:"auto",
+          borderBottom:"1px solid rgba(255,255,255,.03)"
+        }}
+      >
+        {Object.entries(SM).map(([k,s])=>{
+          const active=tab===k;
+          return (
+            <button
+              key={k}
+              onClick={()=>{
+                setTab(k);
+                setSort("default");
+                setQ("");
+              }}
+              style={{
+                display:"flex",
+                alignItems:"center",
+                gap:"4px",
+                padding:"7px 12px",
+                borderRadius:"8px",
+                border:active?`1px solid ${s.color}40`:"1px solid transparent",
+                background:active?s.cd:"transparent",
+                color:active?s.color:"#6B7280",
+                fontSize:"12px",
+                fontWeight:active?700:500,
+                cursor:"pointer",
+                whiteSpace:"nowrap",
+                outline:"none"
+              }}
+            >
+              <span style={{fontSize:"14px"}}>{s.icon}</span>
+              {s.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{padding:"14px 20px"}}>
+        <p style={{fontSize:"13px",color:"#9CA3AF",marginBottom:"12px"}}>
+          <span style={{color:sec.color,fontWeight:700}}>{sec.icon} {sec.label}</span>
+          {" "}
+          {sec.desc}
+        </p>
+
+        {renderContent()}
+      </div>
+
+      <div
+        style={{
+          padding:"14px 20px",
+          borderTop:"1px solid rgba(255,255,255,.03)",
+          textAlign:"center",
+          fontSize:"10px",
+          color:"#4B5563"
+        }}
+      >
+        AI Only Dashboard
+      </div>
+    </div>
+  );
+}
 ReactDOM.render(<App/>,document.getElementById('root'));
 </script>
 </body>
