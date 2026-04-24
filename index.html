@@ -23,7 +23,6 @@ body{background:#080A0F;color:#E5E7EB;font-family:'Inter',system-ui,sans-serif;m
 <script type="text/babel">
 const {useState,useMemo,useEffect,useCallback,useRef}=React;
 function parseMcap(s){if(!s)return 0;const n=parseFloat(s);if(s.includes('T'))return n*1000;if(s.includes('B'))return n;return n/1000;}
-
 const initS=[
   {t:"CEG",n:"Constellation Energy",sec:"nuclear",sub:"Nuclear Power",p:299.13,ch:1.49,r:"Buy",an:72,tu:12,rg:8,eg:13,mc:"101.9B",cat:"TMI 원전 재가동, Meta 20년 계약",q:3,v:1,desc:"미국 최대 원자력 발전 운영사",rsi:58,ytd:22,vn:"TMI 재가동 기대감에 프리미엄. 장기 계약 안정성 반영",hi:432.78,lo:138,avg:264.95,f:{vo:6,va:5,si:9,mo:7,be:6,ou:8},nw:false},
   {t:"CCJ",n:"Cameco Corp",sec:"nuclear",sub:"Uranium Mining",p:120.25,ch:0.96,r:"Buy",an:74,tu:25,rg:30,eg:55,mc:"52.8B",cat:"Westinghouse 49%",q:3,v:2,desc:"세계 2위 우라늄",rsi:55,ytd:35,vn:"우라늄 상승 반영 중. Westinghouse 시너지 미반영",hi:180,lo:75,avg:150,f:{vo:7,va:6,si:8,mo:7,be:7,ou:8},nw:false},
@@ -47,25 +46,28 @@ const initS=[
   {t:"BE",n:"Bloom Energy",sec:"power",sub:"Fuel Cells",p:209.97,ch:-1.81,r:"Buy",an:65,tu:22,rg:58,eg:140,mc:"47.5B",cat:"$20B 백로그",q:3,v:1,desc:"SOFC 발전",rsi:68,ytd:180,vn:"YTD +180% 과열. 매출 58% 성장이 뒷받침",hi:300,lo:100,avg:265,f:{vo:8,va:4,si:6,mo:9,be:8,ou:8},nw:false},
   {t:"WULF",n:"TeraWulf",sec:"power",sub:"AI DC",p:19.31,ch:-1.86,r:"Buy",an:65,tu:45,rg:200,eg:0,mc:"6.8B",cat:"HPC 50%+",q:2,v:2,desc:"BTC→AI 전환",rsi:58,ytd:755,vn:"YTD +755%. 유증 희석 vs DC 성장",hi:28,lo:8,avg:22,f:{vo:9,va:3,si:3,mo:8,be:9,ou:7},nw:true},
   {t:"NBIS",n:"Nebius Group",sec:"power",sub:"GPU Cloud",p:165.26,ch:-0.91,r:"Buy",an:70,tu:45,rg:830,eg:0,mc:"37.5B",cat:"+830%",q:3,v:2,desc:"매출 830%",rsi:64,ytd:320,vn:"830% 성장이나 적자. 속도가 밸류 정당화",hi:250,lo:50,avg:200,f:{vo:9,va:3,si:5,mo:9,be:9,ou:8},nw:false},
+  {t:"CRWV",n:"CoreWeave",sec:"power",sub:"GPU Cloud",p:148.50,ch:2.10,r:"Buy",an:75,tu:35,rg:420,eg:0,mc:"72B",cat:"NVIDIA 최대 파트너, MSFT $10B",q:3,v:2,desc:"NVIDIA GPU 전문 하이퍼스케일러. 2025 IPO 이후 급성장",rsi:62,ytd:185,vn:"IPO 이후 +185%. 단일 고객 집중 리스크 vs 백로그 $15B",hi:220,lo:40,avg:180,f:{vo:10,va:3,si:6,mo:10,be:10,ou:9},nw:true},
   {t:"APD",n:"Air Products",sec:"power",sub:"Industrial Gas",p:297.26,ch:0.69,r:"Hold",an:58,tu:8,rg:5,eg:8,mc:"66B",cat:"수소경제",q:2,v:2,desc:"가스 3위",rsi:47,ytd:5,vn:"방어주. 성장 제한적이나 배당 안정",hi:340,lo:250,avg:310,f:{vo:3,va:7,si:8,mo:4,be:3,ou:5},nw:true},
   {t:"LIN",n:"Linde PLC",sec:"power",sub:"Industrial Gas",p:499.08,ch:0.23,r:"Buy",an:72,tu:10,rg:6,eg:12,mc:"238B",cat:"가스 1위",q:3,v:1,desc:"글로벌 1위",rsi:50,ytd:8,vn:"적정가. 프리미엄 합당하나 상승여력 제한",hi:560,lo:420,avg:530,f:{vo:2,va:7,si:9,mo:5,be:2,ou:6},nw:true},
   {t:"LITE",n:"Lumentum",sec:"photonics",sub:"Lasers",p:827,ch:0,r:"Strong Buy",an:85,tu:15,rg:77,eg:6700,mc:"54B",cat:"NVIDIA $2B",q:3,v:1,desc:"광학 핵심",rsi:74,ytd:95,vn:"RSI 74 과매수. NVIDIA+S&P 편입 소화 중",hi:1000,lo:400,avg:750,f:{vo:8,va:4,si:7,mo:9,be:8,ou:9},nw:false},
-  {t:"COHR",n:"Coherent",sec:"photonics",sub:"Modules",p:0,ch:0,r:"Strong Buy",an:82,tu:20,rg:15,eg:45,mc:"25B",cat:"NVIDIA $2B",q:3,v:2,desc:"실리콘 포토닉스",rsi:66,ytd:93,vn:"35x P/E 합리적",hi:0,lo:0,avg:0,f:{vo:7,va:5,si:6,mo:8,be:7,ou:9},nw:false},
-  {t:"MRVL",n:"Marvell",sec:"photonics",sub:"Custom Si",p:0,ch:0,r:"Buy",an:78,tu:22,rg:25,eg:40,mc:"95B",cat:"Celestial AI",q:3,v:2,desc:"AI칩+광학",rsi:52,ytd:15,vn:"인수 시너지 미반영",hi:0,lo:0,avg:0,f:{vo:7,va:5,si:8,mo:7,be:7,ou:8},nw:false},
-  {t:"FN",n:"Fabrinet",sec:"photonics",sub:"Mfg",p:0,ch:0,r:"Buy",an:72,tu:18,rg:20,eg:25,mc:"16B",cat:"광학 EMS",q:2,v:2,desc:"계약제조",rsi:50,ytd:18,vn:"안정적",hi:0,lo:0,avg:0,f:{vo:6,va:6,si:5,mo:7,be:6,ou:7},nw:false},
-  {t:"MTSI",n:"MACOM",sec:"photonics",sub:"Analog",p:0,ch:0,r:"Buy",an:70,tu:28,rg:22,eg:35,mc:"17B",cat:"하이브리드",q:2,v:2,desc:"아날로그+광학",rsi:63,ytd:39,vn:"랠리 후 밸류 부담",hi:0,lo:0,avg:0,f:{vo:7,va:5,si:5,mo:8,be:7,ou:8},nw:false},
-  {t:"MKSI",n:"MKS Instruments",sec:"photonics",sub:"Equip",p:0,ch:0,r:"Buy",an:68,tu:15,rg:12,eg:24,mc:"17B",cat:"장비",q:2,v:2,desc:"계측",rsi:48,ytd:10,vn:"적정가",hi:0,lo:0,avg:0,f:{vo:6,va:6,si:5,mo:6,be:6,ou:7},nw:false},
-  {t:"IPGP",n:"IPG Photonics",sec:"photonics",sub:"Lasers",p:0,ch:0,r:"Buy",an:62,tu:30,rg:10,eg:18,mc:"6B",cat:"EV 리쇼어링",q:2,v:3,desc:"레이저 1위",rsi:56,ytd:59,vn:"특허 소송 후 저가 매수 기회",hi:0,lo:0,avg:0,f:{vo:7,va:5,si:4,mo:7,be:7,ou:6},nw:false},
-  {t:"AAOI",n:"Applied Opto",sec:"photonics",sub:"Transceivers",p:0,ch:0,r:"Buy",an:60,tu:35,rg:40,eg:120,mc:"4B",cat:"400G/800G",q:2,v:3,desc:"트랜시버",rsi:59,ytd:42,vn:"수요 폭발이 프리미엄 정당화",hi:0,lo:0,avg:0,f:{vo:9,va:4,si:3,mo:8,be:9,ou:7},nw:false},
+  {t:"COHR",n:"Coherent",sec:"photonics",sub:"Modules",p:181.40,ch:0.8,r:"Strong Buy",an:82,tu:20,rg:15,eg:45,mc:"28B",cat:"NVIDIA $2B",q:3,v:2,desc:"실리콘 포토닉스",rsi:66,ytd:93,vn:"35x P/E 합리적",hi:220,lo:70,avg:180,f:{vo:7,va:5,si:6,mo:8,be:7,ou:9},nw:false},
+  {t:"MRVL",n:"Marvell",sec:"photonics",sub:"Custom Si",p:82.90,ch:-0.4,r:"Buy",an:78,tu:22,rg:25,eg:40,mc:"72B",cat:"Celestial AI",q:3,v:2,desc:"AI칩+광학",rsi:52,ytd:15,vn:"인수 시너지 미반영",hi:130,lo:55,avg:110,f:{vo:7,va:5,si:8,mo:7,be:7,ou:8},nw:false},
+  {t:"FN",n:"Fabrinet",sec:"photonics",sub:"Mfg",p:287.20,ch:0.3,r:"Buy",an:72,tu:18,rg:20,eg:25,mc:"11B",cat:"광학 EMS",q:2,v:2,desc:"계약제조",rsi:50,ytd:18,vn:"안정적",hi:340,lo:180,avg:280,f:{vo:6,va:6,si:5,mo:7,be:6,ou:7},nw:false},
+  {t:"MTSI",n:"MACOM",sec:"photonics",sub:"Analog",p:164.10,ch:0.6,r:"Buy",an:70,tu:28,rg:22,eg:35,mc:"12B",cat:"하이브리드",q:2,v:2,desc:"아날로그+광학",rsi:63,ytd:39,vn:"랠리 후 밸류 부담",hi:200,lo:90,avg:170,f:{vo:7,va:5,si:5,mo:8,be:7,ou:8},nw:false},
+  {t:"MKSI",n:"MKS Instruments",sec:"photonics",sub:"Equip",p:107.30,ch:0.2,r:"Buy",an:68,tu:15,rg:12,eg:24,mc:"7B",cat:"장비",q:2,v:2,desc:"계측",rsi:48,ytd:10,vn:"적정가",hi:140,lo:75,avg:115,f:{vo:6,va:6,si:5,mo:6,be:6,ou:7},nw:false},
+  {t:"IPGP",n:"IPG Photonics",sec:"photonics",sub:"Lasers",p:98.60,ch:0.5,r:"Buy",an:62,tu:30,rg:10,eg:18,mc:"4B",cat:"EV 리쇼어링",q:2,v:3,desc:"레이저 1위",rsi:56,ytd:59,vn:"특허 소송 후 저가 매수 기회",hi:130,lo:50,avg:105,f:{vo:7,va:5,si:4,mo:7,be:7,ou:6},nw:false},
+  {t:"AAOI",n:"Applied Opto",sec:"photonics",sub:"Transceivers",p:51.20,ch:1.2,r:"Buy",an:60,tu:35,rg:40,eg:120,mc:"2.5B",cat:"400G/800G",q:2,v:3,desc:"트랜시버",rsi:59,ytd:42,vn:"수요 폭발이 프리미엄 정당화",hi:72,lo:22,avg:55,f:{vo:9,va:4,si:3,mo:8,be:9,ou:7},nw:false},
   {t:"NVDA",n:"NVIDIA",sec:"infra",sub:"GPU",p:199.81,ch:0,r:"Strong Buy",an:92,tu:15,rg:55,eg:60,mc:"4870B",cat:"Rubin H2 2026",q:3,v:1,desc:"GPU 절대 강자",rsi:56,ytd:12,vn:"$4.87T. Rubin+$3-4T 전망이 밸류 지지",hi:250,lo:130,avg:210,f:{vo:7,va:5,si:10,mo:8,be:7,ou:10},nw:false},
   {t:"INTC",n:"Intel",sec:"infra",sub:"CPU",p:68.49,ch:5.47,r:"Hold",an:55,tu:12,rg:8,eg:45,mc:"296B",cat:"18A 파운드리",q:2,v:2,desc:"파운드리 분사",rsi:71,ytd:120,vn:"+120% 급등 RSI 71 과매수. 기대감 선반영",hi:85,lo:25,avg:55,f:{vo:7,va:7,si:9,mo:7,be:6,ou:6},nw:true},
   {t:"ORCL",n:"Oracle",sec:"infra",sub:"Cloud",p:178.36,ch:5.04,r:"Buy",an:75,tu:20,rg:15,eg:22,mc:"498B",cat:"OpenAI $30B",q:3,v:2,desc:"AI 클라우드",rsi:42,ytd:-18,vn:"고점 -45%. OpenAI 계약 대비 과매도",hi:350,lo:140,avg:250,f:{vo:7,va:5,si:9,mo:7,be:6,ou:8},nw:true},
   {t:"AVGO",n:"Broadcom",sec:"infra",sub:"Networking",p:402.47,ch:0,r:"Strong Buy",an:88,tu:18,rg:22,eg:30,mc:"934B",cat:"맞춤 AI칩",q:3,v:2,desc:"커스텀 AI칩",rsi:62,ytd:28,vn:"Meta 딜로 추가 상승. VMware 안정화",hi:500,lo:200,avg:420,f:{vo:6,va:6,si:9,mo:8,be:6,ou:9},nw:false},
-  {t:"VRT",n:"Vertiv",sec:"infra",sub:"Cooling",p:0,ch:0,r:"Buy",an:80,tu:25,rg:34,eg:47,mc:"72B",cat:"Rubin 냉각",q:3,v:2,desc:"DC 냉각",rsi:58,ytd:22,vn:"252% 주문이 밸류 뒷받침",hi:0,lo:0,avg:0,f:{vo:7,va:5,si:7,mo:8,be:7,ou:9},nw:false},
-  {t:"APH",n:"Amphenol",sec:"infra",sub:"Connectors",p:0,ch:0,r:"Buy",an:76,tu:16,rg:20,eg:28,mc:"110B",cat:"DC 33%",q:3,v:1,desc:"커넥터 1위",rsi:54,ytd:15,vn:"안정적 프리미엄",hi:0,lo:0,avg:0,f:{vo:4,va:6,si:8,mo:7,be:4,ou:8},nw:false},
-  {t:"DELL",n:"Dell Tech",sec:"infra",sub:"Servers",p:0,ch:0,r:"Buy",an:74,tu:20,rg:19,eg:27,mc:"100B",cat:"AI $64B",q:2,v:2,desc:"서버 1위",rsi:50,ytd:10,vn:"저마진 우려. 백로그 $43B 안전판",hi:0,lo:0,avg:0,f:{vo:6,va:7,si:8,mo:7,be:6,ou:8},nw:false},
-  {t:"CRDO",n:"Credo Tech",sec:"infra",sub:"Cables",p:0,ch:0,r:"Buy",an:72,tu:30,rg:200,eg:300,mc:"18B",cat:"3x→$406M",q:3,v:2,desc:"AEC 혁신",rsi:65,ytd:85,vn:"소수 고객 의존 리스크",hi:0,lo:0,avg:0,f:{vo:9,va:3,si:4,mo:9,be:9,ou:8},nw:false},
-  {t:"EME",n:"EMCOR",sec:"infra",sub:"Construction",p:0,ch:0,r:"Buy",an:68,tu:15,rg:18,eg:22,mc:"28B",cat:"DC 건설",q:2,v:2,desc:"DC 건설",rsi:52,ytd:18,vn:"적정. 구조적 성장",hi:0,lo:0,avg:0,f:{vo:5,va:6,si:6,mo:7,be:5,ou:7},nw:false},
+  {t:"VRT",n:"Vertiv",sec:"infra",sub:"Cooling",p:138.40,ch:1.1,r:"Buy",an:80,tu:25,rg:34,eg:47,mc:"52B",cat:"Rubin 냉각",q:3,v:2,desc:"DC 냉각",rsi:58,ytd:22,vn:"252% 주문이 밸류 뒷받침",hi:180,lo:70,avg:150,f:{vo:7,va:5,si:7,mo:8,be:7,ou:9},nw:false},
+  {t:"APH",n:"Amphenol",sec:"infra",sub:"Connectors",p:84.10,ch:0.4,r:"Buy",an:76,tu:16,rg:20,eg:28,mc:"102B",cat:"DC 33%",q:3,v:1,desc:"커넥터 1위",rsi:54,ytd:15,vn:"안정적 프리미엄",hi:105,lo:55,avg:92,f:{vo:4,va:6,si:8,mo:7,be:4,ou:8},nw:false},
+  {t:"DELL",n:"Dell Tech",sec:"infra",sub:"Servers",p:127.20,ch:-0.8,r:"Buy",an:74,tu:20,rg:19,eg:27,mc:"90B",cat:"AI $64B",q:2,v:2,desc:"서버 1위",rsi:50,ytd:10,vn:"저마진 우려. 백로그 $43B 안전판",hi:170,lo:80,avg:140,f:{vo:6,va:7,si:8,mo:7,be:6,ou:8},nw:false},
+  {t:"CRDO",n:"Credo Tech",sec:"infra",sub:"Cables",p:133.50,ch:1.6,r:"Buy",an:72,tu:30,rg:200,eg:300,mc:"22B",cat:"3x→$406M",q:3,v:2,desc:"AEC 혁신",rsi:65,ytd:85,vn:"소수 고객 의존 리스크",hi:170,lo:50,avg:140,f:{vo:9,va:3,si:4,mo:9,be:9,ou:8},nw:false},
+  {t:"EME",n:"EMCOR",sec:"infra",sub:"Construction",p:524.80,ch:0.2,r:"Buy",an:68,tu:15,rg:18,eg:22,mc:"24B",cat:"DC 건설",q:2,v:2,desc:"DC 건설",rsi:52,ytd:18,vn:"적정. 구조적 성장",hi:620,lo:380,avg:510,f:{vo:5,va:6,si:6,mo:7,be:5,ou:7},nw:false},
+  {t:"NVTS",n:"Navitas Semiconductor",sec:"infra",sub:"Power Semi (GaN/SiC)",p:10.20,ch:3.40,r:"Buy",an:70,tu:60,rg:15,eg:0,mc:"1.9B",cat:"NVIDIA 800V HVDC 파트너",q:2,v:3,desc:"GaN·SiC 전력 반도체 전문. AI 서버 800V 직류 아키텍처의 핵심. NVIDIA 차세대 랙 파워 공급망 진입",rsi:62,ytd:95,vn:"적자 지속이나 800V HVDC 채택시 밸류 재평가. 변동성 매우 높음",hi:18,lo:3,avg:12,f:{vo:10,va:4,si:3,mo:9,be:10,ou:8},nw:true},
+  {t:"MPWR",n:"Monolithic Power",sec:"infra",sub:"Power Mgmt IC",p:720.50,ch:1.20,r:"Buy",an:82,tu:25,rg:22,eg:28,mc:"34B",cat:"NVIDIA GPU VRM 주공급사",q:3,v:2,desc:"GPU·CPU용 전압조정기(VRM) 및 PMIC. NVIDIA H100·B100·Rubin 전반 채택. 아날로그·믹스드시그널 강자",rsi:54,ytd:18,vn:"2024 듀얼소싱 우려 후 저점 매수 구간. Blackwell 램프업 + Rubin 채택 가시화로 리레이팅 여지",hi:1050,lo:450,avg:820,f:{vo:6,va:6,si:8,mo:7,be:6,ou:9},nw:true},
   {t:"FCX",n:"Freeport-McMoRan",sec:"materials",sub:"Copper",p:68.28,ch:-0.61,r:"Buy",an:74,tu:18,rg:12,eg:25,mc:"97B",cat:"구리 최대",q:3,v:2,desc:"Grasberg",rsi:60,ytd:30,vn:"AI 전력망이 추가 수요 드라이버",hi:85,lo:40,avg:70,f:{vo:7,va:6,si:8,mo:6,be:7,ou:7},nw:true},
   {t:"SCCO",n:"Southern Copper",sec:"materials",sub:"Copper",p:188.24,ch:-0.56,r:"Buy",an:65,tu:12,rg:10,eg:18,mc:"145B",cat:"고배당",q:3,v:1,desc:"고배당",rsi:48,ytd:15,vn:"배당+성장 조합",hi:230,lo:100,avg:195,f:{vo:5,va:6,si:8,mo:5,be:5,ou:6},nw:true},
   {t:"LAC",n:"Lithium Americas",sec:"materials",sub:"Lithium",p:4.87,ch:6.80,r:"Buy",an:60,tu:55,rg:0,eg:0,mc:"1.1B",cat:"Thacker Pass",q:1,v:3,desc:"미국 최대 리튬",rsi:42,ytd:-28,vn:"리튬 바닥권. 멀티배거 가능",hi:10,lo:2.5,avg:7,f:{vo:10,va:3,si:2,mo:5,be:9,ou:6},nw:true},
@@ -75,7 +77,8 @@ const initS=[
   {t:"XPRO",n:"Expro Group",sec:"materials",sub:"Services",p:16.11,ch:-0.31,r:"Hold",an:55,tu:35,rg:5,eg:10,mc:"1.8B",cat:"해저 서비스",q:1,v:3,desc:"에너지 서비스",rsi:40,ytd:-15,vn:"저성장이나 저평가",hi:25,lo:10,avg:20,f:{vo:7,va:5,si:3,mo:4,be:7,ou:5},nw:true},
   {t:"PALL",n:"abrdn Palladium",sec:"materials",sub:"ETF",p:141.58,ch:-0.90,r:"ETF",an:0,tu:0,rg:0,eg:0,mc:"0.5B",cat:"팔라듐",q:0,v:0,desc:"실물",rsi:43,ytd:-8,vn:"",hi:0,lo:0,avg:0,f:{vo:7,va:5,si:2,mo:4,be:6,ou:5},nw:true},
 ];
-
+// Tickers Finnhub free tier can't resolve (KRX, etc) - skip from live fetch
+const SKIP_FETCH=new Set(["047040","000720","034020","SRUUF","KAP","PDN"]);
 const SM={
   nuclear:{label:"Nuclear",icon:"☢️",color:"#00E5A0",cd:"rgba(0,229,160,0.12)",desc:"핵분열·우라늄 — AI DC 기저전력"},
   power:{label:"AI Power",icon:"⚡",color:"#FFD93D",cd:"rgba(255,217,61,0.12)",desc:"연료전지·가스터빈·산업가스"},
@@ -89,7 +92,6 @@ const SM={
   snap:{label:"Daily",icon:"📋",color:"#F472B6",cd:"rgba(244,114,182,0.12)",desc:"오늘의 스냅샷 — 자금흐름·진입·모멘텀·익절·대기"},
   news:{label:"News",icon:"📰",color:"#38BDF8",cd:"rgba(56,189,248,0.12)",desc:"종목별 최신 뉴스"},
 };
-
 const MA={
   "3-3":{l:"Strong Buy",s:"Jackpot",c:"#00E5A0",bg:"rgba(0,229,160,0.08)"},
   "3-2":{l:"Buy",s:"",c:"#10b981",bg:"rgba(16,185,129,0.06)"},
@@ -101,33 +103,24 @@ const MA={
   "1-2":{l:"Avoid",s:"",c:"#ef4444",bg:"rgba(239,68,68,0.05)"},
   "1-1":{l:"Avoid",s:"Worst",c:"#ef4444",bg:"rgba(239,68,68,0.08)"},
 };
-
 // ── Finnhub helpers ──
 async function fhQuote(sym,key){try{const r=await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${key}`);if(!r.ok)return null;const d=await r.json();if(!d||d.c===0)return null;return{price:d.c,change:d.d,changePct:d.dp}}catch{return null}}
 async function fhNews(sym,key){try{const to=new Date().toISOString().slice(0,10);const fr=new Date(Date.now()-7*86400000).toISOString().slice(0,10);const r=await fetch(`https://finnhub.io/api/v1/company-news?symbol=${sym}&from=${fr}&to=${to}&token=${key}`);if(!r.ok)return[];return(await r.json()).slice(0,8)}catch{return[]}}
 function delay(ms){return new Promise(r=>setTimeout(r,ms))}
-
 // ── Logos ──
-const LDOM={CEG:'constellation.com',CCJ:'cameco.com',OKLO:'oklo.com',LEU:'centrusenergy.com',UEC:'uraniumenergy.com',SMR:'nuscalepower.com',NNE:'nanonuclearenergy.com',DNN:'denisonmines.com',UUUU:'energyfuels.com',GEV:'gevernova.com',BE:'bloomenergy.com',WULF:'terawulf.com',NBIS:'nebius.com',APD:'airproducts.com',LIN:'linde.com',LITE:'lumentum.com',COHR:'coherent.com',MRVL:'marvell.com',FN:'fabrinet.com',MTSI:'macom.com',MKSI:'mksinst.com',IPGP:'ipgphotonics.com',AAOI:'ao-inc.com',NVDA:'nvidia.com',INTC:'intel.com',ORCL:'oracle.com',AVGO:'broadcom.com',VRT:'vertiv.com',APH:'amphenol.com',DELL:'dell.com',CRDO:'credosemi.com',EME:'emcorgroup.com',FCX:'fcx.com',SCCO:'southerncoppercorp.com',LAC:'lithiumamericas.com',BHP:'bhp.com',SBSW:'sibanyestillwater.com',VAL:'valaris.com',XPRO:'expro.com',URA:'globalxetfs.com',URNM:'sprott.com',PALL:'abrdn.com',CRWV:'coreweave.com',CORZ:'corescientific.com',IREN:'iren.com',APLD:'applieddigital.com',SNDK:'westerndigital.com',CIFR:'ciphermining.com',TSEM:'towersemi.com',RIOT:'riotplatforms.com',KRC:'kilroyrealty.com',HUT:'hut8.com',BTDR:'bitdeer.com',CLSK:'cleanspark.com',LBRT:'libertyenergy.com',INFY:'infosys.com',BW:'babcock.com',SEI:'solarisoilfield.com',WYFI:'wy-fi.com',PSIX:'psiengines.com',KEEL:'keelco.com',PUMP:'propetroservices.com',NXE:'nexgenenergy.ca',KAP:'kazatomprom.kz',PDN:'paladinenergy.com.au',SRUUF:'sprott.com','047040':'daewooenc.com','000720':'hdec.kr','034020':'doosanenvility.com'};
+const LDOM={CEG:'constellation.com',CCJ:'cameco.com',OKLO:'oklo.com',LEU:'centrusenergy.com',UEC:'uraniumenergy.com',SMR:'nuscalepower.com',NNE:'nanonuclearenergy.com',DNN:'denisonmines.com',UUUU:'energyfuels.com',GEV:'gevernova.com',BE:'bloomenergy.com',WULF:'terawulf.com',NBIS:'nebius.com',APD:'airproducts.com',LIN:'linde.com',LITE:'lumentum.com',COHR:'coherent.com',MRVL:'marvell.com',FN:'fabrinet.com',MTSI:'macom.com',MKSI:'mksinst.com',IPGP:'ipgphotonics.com',AAOI:'ao-inc.com',NVDA:'nvidia.com',INTC:'intel.com',ORCL:'oracle.com',AVGO:'broadcom.com',VRT:'vertiv.com',APH:'amphenol.com',DELL:'dell.com',CRDO:'credosemi.com',EME:'emcorgroup.com',FCX:'fcx.com',SCCO:'southerncoppercorp.com',LAC:'lithiumamericas.com',BHP:'bhp.com',SBSW:'sibanyestillwater.com',VAL:'valaris.com',XPRO:'expro.com',URA:'globalxetfs.com',URNM:'sprott.com',PALL:'abrdn.com',CRWV:'coreweave.com',CORZ:'corescientific.com',IREN:'iren.com',APLD:'applieddigital.com',SNDK:'westerndigital.com',CIFR:'ciphermining.com',TSEM:'towersemi.com',RIOT:'riotplatforms.com',KRC:'kilroyrealty.com',HUT:'hut8.com',BTDR:'bitdeer.com',CLSK:'cleanspark.com',LBRT:'libertyenergy.com',INFY:'infosys.com',BW:'babcock.com',SEI:'solarisoilfield.com',WYFI:'wy-fi.com',PSIX:'psiengines.com',KEEL:'keelco.com',PUMP:'propetroservices.com',NXE:'nexgenenergy.ca',KAP:'kazatomprom.kz',PDN:'paladinenergy.com.au',SRUUF:'sprott.com',EQT:'eqt.com',NVTS:'navitassemi.com',MPWR:'monolithicpower.com','047040':'daewooenc.com','000720':'hdec.kr','034020':'doosanenvility.com'};
 function Logo({t,sc,sz}){const s=sz||32;const d=LDOM[t];if(!d)return <div style={{width:s,height:s,borderRadius:"50%",background:`linear-gradient(135deg,${sc}28,rgba(255,255,255,0.06))`,border:`1px solid ${sc}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:s>28?11:9,fontWeight:800,color:sc,flexShrink:0}}>{t.slice(0,2)}</div>;return <div style={{width:s,height:s,borderRadius:"50%",overflow:"hidden",border:"1px solid rgba(255,255,255,0.12)",background:"#fff",flexShrink:0}}><img src={`https://www.google.com/s2/favicons?sz=128&domain=${d}`} alt={t} style={{width:"100%",height:"100%",objectFit:"contain",padding:2}}/></div>}
-
 // ── Shared components ──
 function RsiBadge({rsi}){if(!rsi)return null;const ob=rsi>=70,os=rsi<=30,hot=rsi>=60,cold=rsi<=40;const c=ob?"#FF6B6B":os?"#00E5A0":hot?"#FFD93D":cold?"#4ECDC4":"#6B7280";const l=ob?"과매수":os?"과매도":hot?"강세":cold?"약세":"중립";return <span style={{fontSize:"10px",padding:"2px 6px",borderRadius:"4px",background:c+"18",color:c,border:`1px solid ${c}30`,fontWeight:600}}>RSI {rsi} {l}</span>}
 function Bar({val,mx,c,lb}){return <div style={{marginBottom:"5px"}}><div style={{display:"flex",justifyContent:"space-between",fontSize:"11px",color:"#8A8F98",marginBottom:"2px"}}><span>{lb}</span><span style={{color:val>0?c:val===0?"#555":"#FF6B6B",fontWeight:600,fontFamily:"monospace"}}>{val>0?`+${val}%`:val===0?"—":`${val}%`}</span></div><div style={{height:"4px",background:"rgba(255,255,255,0.04)",borderRadius:"2px"}}><div style={{height:"100%",width:`${Math.min((Math.abs(val)/mx)*100,100)}%`,borderRadius:"2px",background:`linear-gradient(90deg,${c}88,${c})`}}/></div></div>}
 function Radar({f,color}){const lb=["변동성","밸류","사이즈","모멘텀","베타","전망"],ks=["vo","va","si","mo","be","ou"],cx=90,cy=90,r=65;const an=ks.map((_,i)=>(Math.PI*2*i)/ks.length-Math.PI/2);const pts=ks.map((k,i)=>({x:cx+Math.cos(an[i])*r*((f[k]||5)/10),y:cy+Math.sin(an[i])*r*((f[k]||5)/10)}));return <svg viewBox="0 0 180 180" style={{width:"100%",maxWidth:"200px"}}>{[.25,.5,.75,1].map((lv,li)=><polygon key={li} points={an.map(a=>`${cx+Math.cos(a)*r*lv},${cy+Math.sin(a)*r*lv}`).join(" ")} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth=".5"/>)}{an.map((a,i)=><g key={i}><line x1={cx} y1={cy} x2={cx+Math.cos(a)*r} y2={cy+Math.sin(a)*r} stroke="rgba(255,255,255,0.06)" strokeWidth=".5"/><text x={cx+Math.cos(a)*(r+16)} y={cy+Math.sin(a)*(r+16)} fill="#8A8F98" fontSize="8" textAnchor="middle" dominantBaseline="middle">{lb[i]}</text></g>)}<polygon points={pts.map(p=>`${p.x},${p.y}`).join(" ")} fill={color+"25"} stroke={color} strokeWidth="1.5"/></svg>}
 function TChart({s,color}){if(!s.hi||!s.lo)return null;const mn=s.lo*.85,mx=s.hi*1.08,rng=mx-mn,y=val=>100-((val-mn)/rng)*100;return <svg viewBox="0 0 220 120" style={{width:"100%",maxWidth:"240px"}}><line x1="30" y1={y(s.p)*1.1+5} x2="200" y2={y(s.p)*1.1+5} stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>{[[s.hi,"#00E5A0","최고"],[s.avg,"#FFD93D","평균"],[s.lo,"#FF6B6B","최저"]].map(([val,cl,lb],i)=><g key={i}><line x1="90" y1={y(s.p)*1.1+5} x2="190" y2={y(val)*1.1+5} stroke={cl} strokeWidth="1" strokeDasharray="4,2"/><text x="195" y={y(val)*1.1+4} fill={cl} fontSize="8" fontWeight="700">{lb}</text><text x="195" y={y(val)*1.1+13} fill={cl} fontSize="9" fontFamily="monospace">${val}</text><circle cx="190" cy={y(val)*1.1+5} r="3" fill={cl}/></g>)}<text x="35" y={y(s.p)*1.1+3} fill="#fff" fontSize="8">현재가</text><text x="35" y={y(s.p)*1.1+14} fill="#fff" fontSize="10" fontWeight="700" fontFamily="monospace">${s.p}</text><circle cx="90" cy={y(s.p)*1.1+5} r="3" fill="#fff"/></svg>}
-
 function Card({s,sc,i}){const[ex,setEx]=useState(false);const etf=s.r==="ETF";const rc=s.r.includes("Strong")?"#00E5A0":s.r==="Buy"?"#5EDFB0":etf?"#4ECDC4":"#E5C84C";return <div style={{background:"rgba(255,255,255,0.018)",border:"1px solid rgba(255,255,255,0.05)",borderRadius:"14px",padding:"18px",animation:`fi .3s ease ${i*.03}s both`,position:"relative",cursor:"pointer"}} onClick={()=>setEx(!ex)}>{s.nw&&<div style={{position:"absolute",top:"8px",right:"8px",background:"rgba(255,107,53,0.18)",borderRadius:"4px",padding:"2px 6px",fontSize:"9px",fontWeight:800,color:"#FF6B35"}}>NEW</div>}<div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}><div style={{display:"flex",gap:"10px",alignItems:"flex-start"}}><Logo t={s.t} sc={sc}/><div><div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}><span style={{fontSize:"20px",fontWeight:800,color:"#F0F0F0",fontFamily:"monospace"}}>{s.t}</span><span style={{padding:"3px 8px",borderRadius:"6px",fontSize:"11px",fontWeight:700,background:rc+"18",color:rc}}>{s.r}</span><RsiBadge rsi={s.rsi}/></div><div style={{fontSize:"13px",color:"#9CA3AF",marginTop:"3px"}}>{s.n}</div></div></div>{s.p>0&&<div style={{textAlign:"right"}}><div style={{fontSize:"18px",fontWeight:700,color:"#E5E7EB",fontFamily:"monospace"}}>${s.p<100?s.p.toFixed(2):s.p.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div style={{fontSize:"13px",fontWeight:600,fontFamily:"monospace",color:s.ch>0?"#00E5A0":s.ch<0?"#FF6B6B":"#6B7280"}}>{s.ch>0?"▲+":s.ch<0?"▼":""}{s.ch.toFixed(2)}%</div></div>}</div><div style={{display:"flex",gap:"6px",marginBottom:"10px",flexWrap:"wrap"}}><span style={{background:sc+"14",borderRadius:"5px",padding:"2px 8px",fontSize:"11px",color:sc,fontWeight:600}}>{s.sub}</span><span style={{background:"rgba(255,255,255,0.04)",borderRadius:"5px",padding:"2px 8px",fontSize:"11px",color:"#9CA3AF",fontFamily:"monospace"}}>시총 ${s.mc}</span>{s.ytd!==undefined&&<span style={{background:s.ytd>0?"rgba(0,229,160,0.08)":"rgba(255,107,107,0.08)",borderRadius:"5px",padding:"2px 8px",fontSize:"11px",color:s.ytd>0?"#00E5A0":"#FF6B6B",fontFamily:"monospace"}}>YTD {s.ytd>0?"+":""}{s.ytd}%</span>}</div>{!etf&&<><Bar val={s.tu} mx={100} c={sc} lb="목표 상승률"/><Bar val={s.rg} mx={200} c="#4ECDC4" lb="매출 성장"/><Bar val={s.eg} mx={200} c="#FFD93D" lb="EPS 성장"/><div style={{display:"flex",alignItems:"center",gap:"5px",margin:"6px 0"}}><span style={{fontSize:"11px",color:"#6B7280"}}>신뢰</span><div style={{flex:1,display:"flex",gap:"1.5px"}}>{[...Array(10)].map((_,j)=><div key={j} style={{flex:1,height:"5px",borderRadius:"2px",background:j<Math.round(s.an/10)?sc:"rgba(255,255,255,0.04)"}}/>)}</div><span style={{fontSize:"11px",color:sc,fontWeight:700,fontFamily:"monospace"}}>{s.an}</span></div></>}<div style={{fontSize:"12px",color:"#9CA3AF",lineHeight:1.5,padding:"8px 10px",background:"rgba(255,255,255,0.015)",borderRadius:"7px",borderLeft:`2px solid ${sc}30`}}><span style={{color:sc,fontWeight:700,fontSize:"9px"}}>촉매 </span>{s.cat}</div>{ex&&<div style={{marginTop:"14px",padding:"16px",background:"rgba(0,0,0,0.3)",borderRadius:"12px",animation:"fi .25s ease both"}}><div style={{fontSize:"13px",color:"#D1D5DB",lineHeight:1.7,marginBottom:"12px"}}>{s.desc}</div>{s.vn&&<div style={{fontSize:"12px",color:"#E5C84C",lineHeight:1.6,padding:"8px 10px",background:"rgba(245,158,11,0.06)",borderRadius:"7px",marginBottom:"14px",borderLeft:"2px solid rgba(245,158,11,0.3)"}}>💡 {s.vn}</div>}{s.hi>0&&s.lo>0&&<div style={{display:"flex",flexWrap:"wrap",gap:"16px"}}><div style={{flex:"1 1 220px"}}><div style={{fontSize:"12px",color:"#6B7280",marginBottom:"8px"}}>📊 12개월 전망</div><TChart s={s} color={sc}/></div><div style={{flex:"1 1 180px"}}><div style={{fontSize:"12px",color:"#6B7280",marginBottom:"8px"}}>🕸️ 팩터</div><Radar f={s.f} color={sc}/></div></div>}</div>}<div style={{textAlign:"center",marginTop:"8px",fontSize:"10px",color:"#555"}}>{ex?"▲ 접기":"▼ 상세"}</div></div>}
-
 function WinnersBar({stocks}){const sorted=[...stocks].filter(s=>s.p>0).sort((a,b)=>b.ch-a.ch);const top3=sorted.slice(0,3);const bot3=sorted.slice(-3).reverse();const obList=stocks.filter(s=>s.rsi>=70);const osList=stocks.filter(s=>s.rsi<=35);return <div style={{padding:"16px 20px",borderBottom:"1px solid rgba(255,255,255,.06)",background:"rgba(255,255,255,0.015)"}}><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:"12px"}}><div style={{background:"rgba(0,229,160,0.06)",border:"1px solid rgba(0,229,160,0.15)",borderRadius:"12px",padding:"14px"}}><div style={{fontSize:"13px",color:"#6B7280",fontWeight:700,marginBottom:"8px"}}>🏆 오늘의 위너</div>{top3.map((s,i)=><div key={s.t} style={{display:"flex",justifyContent:"space-between",marginBottom:"5px"}}><div style={{display:"flex",alignItems:"center",gap:"6px"}}><span style={{fontSize:i===0?"18px":"14px",fontWeight:800,color:i===0?"#00E5A0":"#5EDFB0"}}>{i+1}</span><span style={{fontSize:i===0?"20px":"16px",fontWeight:800,fontFamily:"monospace",color:"#F0F0F0"}}>{s.t}</span></div><span style={{fontSize:i===0?"22px":"16px",fontWeight:800,fontFamily:"monospace",color:"#00E5A0"}}>+{s.ch.toFixed(1)}%</span></div>)}</div><div style={{background:"rgba(255,107,107,0.06)",border:"1px solid rgba(255,107,107,0.15)",borderRadius:"12px",padding:"14px"}}><div style={{fontSize:"13px",color:"#6B7280",fontWeight:700,marginBottom:"8px"}}>💀 오늘의 루저</div>{bot3.map((s,i)=><div key={s.t} style={{display:"flex",justifyContent:"space-between",marginBottom:"5px"}}><div style={{display:"flex",alignItems:"center",gap:"6px"}}><span style={{fontSize:i===0?"18px":"14px",fontWeight:800,color:i===0?"#FF6B6B":"#FF9999"}}>{i+1}</span><span style={{fontSize:i===0?"20px":"16px",fontWeight:800,fontFamily:"monospace",color:"#F0F0F0"}}>{s.t}</span></div><span style={{fontSize:i===0?"22px":"16px",fontWeight:800,fontFamily:"monospace",color:"#FF6B6B"}}>{s.ch.toFixed(1)}%</span></div>)}</div><div style={{background:"rgba(255,107,53,0.06)",border:"1px solid rgba(255,107,53,0.15)",borderRadius:"12px",padding:"14px"}}><div style={{fontSize:"13px",color:"#6B7280",fontWeight:700,marginBottom:"8px"}}>🔥 과매수 <span style={{fontSize:"10px",color:"#FF6B35"}}>RSI≥70</span></div>{obList.length>0?obList.map(s=><div key={s.t} style={{display:"flex",justifyContent:"space-between",marginBottom:"5px"}}><span style={{fontSize:"18px",fontWeight:800,fontFamily:"monospace",color:"#F0F0F0"}}>{s.t}</span><div style={{display:"flex",alignItems:"center",gap:"6px"}}><div style={{width:"50px",height:"7px",background:"rgba(255,255,255,0.06)",borderRadius:"4px"}}><div style={{width:`${s.rsi}%`,height:"100%",background:"linear-gradient(90deg,#f59e0b,#FF6B6B)",borderRadius:"4px"}}/></div><span style={{fontSize:"18px",fontWeight:800,fontFamily:"monospace",color:"#FF6B35"}}>{s.rsi}</span></div></div>):<div style={{color:"#4B5563"}}>없음 ✓</div>}</div><div style={{background:"rgba(0,229,160,0.04)",border:"1px solid rgba(0,229,160,0.12)",borderRadius:"12px",padding:"14px"}}><div style={{fontSize:"13px",color:"#6B7280",fontWeight:700,marginBottom:"8px"}}>❄️ 과매도 <span style={{fontSize:"10px",color:"#00E5A0"}}>RSI≤35</span></div>{osList.length>0?osList.map(s=><div key={s.t} style={{display:"flex",justifyContent:"space-between",marginBottom:"5px"}}><span style={{fontSize:"18px",fontWeight:800,fontFamily:"monospace",color:"#F0F0F0"}}>{s.t}</span><div style={{display:"flex",alignItems:"center",gap:"6px"}}><div style={{width:"50px",height:"7px",background:"rgba(255,255,255,0.06)",borderRadius:"4px"}}><div style={{width:`${s.rsi}%`,height:"100%",background:"linear-gradient(90deg,#00E5A0,#4ECDC4)",borderRadius:"4px"}}/></div><span style={{fontSize:"18px",fontWeight:800,fontFamily:"monospace",color:"#00E5A0"}}>{s.rsi}</span></div></div>):<div style={{color:"#4B5563"}}>없음</div>}</div></div></div>}
-
 function HeatmapView({stocks}){const ss=stocks.filter(s=>parseMcap(s.mc)>0).sort((a,b)=>parseMcap(b.mc)-parseMcap(a.mc));const total=ss.reduce((a,s)=>a+parseMcap(s.mc),0);return <div><div style={{fontSize:"12px",color:"#6B7280",marginBottom:"12px"}}>크기=시총 · 색상=등락률 · YTD 표시</div><div style={{display:"flex",flexWrap:"wrap",gap:"2px"}}>{ss.map(s=>{const pct=Math.max((parseMcap(s.mc)/total)*100,2.5);const bg=s.ch>2?"rgba(0,229,160,0.25)":s.ch>0?"rgba(0,229,160,0.12)":s.ch<-2?"rgba(255,107,107,0.25)":s.ch<0?"rgba(255,107,107,0.12)":"rgba(255,255,255,0.04)";const sc=SM[s.sec]?.color||"#888";return <div key={s.t} style={{flex:`1 1 ${pct}%`,minWidth:"80px",minHeight:parseMcap(s.mc)>100?"100px":"70px",background:bg,borderRadius:"4px",padding:"8px",display:"flex",flexDirection:"column",justifyContent:"space-between"}} title={`${s.n}\nRSI:${s.rsi}`}><div><div style={{display:"flex",alignItems:"center",gap:"3px"}}><span style={{color:sc,fontSize:"6px"}}>●</span><span style={{fontSize:"14px",fontWeight:800,fontFamily:"monospace",color:"#F0F0F0"}}>{s.t}</span></div><div style={{fontSize:"10px",color:"#9CA3AF"}}>{s.n}</div></div><div><div style={{fontSize:"13px",fontWeight:700,fontFamily:"monospace",color:s.ch>0?"#00E5A0":s.ch<0?"#FF6B6B":"#9CA3AF"}}>{s.ch>0?"+":""}{s.ch.toFixed(2)}%</div><div style={{display:"flex",gap:"6px"}}><span style={{fontSize:"9px",color:"#6B7280"}}>${s.mc}</span><span style={{fontSize:"9px",color:s.ytd>0?"#00E5A0":"#FF6B6B"}}>YTD {s.ytd>0?"+":""}{s.ytd}%</span></div></div></div>})}</div></div>}
-
 function MatrixCell({stocks,action}){const[sel,setSel]=useState(null);return <div style={{background:action.bg,border:`1px solid ${action.c}15`,borderRadius:"8px",padding:"8px",minHeight:"80px"}}><div style={{fontSize:"10px",fontWeight:700,color:action.c,marginBottom:"4px"}}>{action.l}</div><div style={{display:"flex",flexWrap:"wrap",gap:"3px"}}>{stocks.map(s=>{const sc=SM[s.sec]?.color||"#888";return <div key={s.t} onClick={e=>{e.stopPropagation();setSel(sel===s.t?null:s.t)}} style={{background:sel===s.t?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.3)",border:`1px solid ${sel===s.t?sc:sc+"30"}`,borderRadius:"5px",padding:"3px 7px",fontSize:"11px",fontWeight:700,color:"#E5E7EB",fontFamily:"monospace",cursor:"pointer"}}><span style={{color:sc,fontSize:"7px",marginRight:"2px"}}>●</span>{s.t}</div>})}</div>{sel&&stocks.filter(s=>s.t===sel).map(s=><div key={s.t} style={{marginTop:"6px",padding:"6px 8px",background:"rgba(0,0,0,0.4)",borderRadius:"6px",fontSize:"11px",color:"#E5C84C",lineHeight:1.5,borderLeft:"2px solid rgba(245,158,11,0.4)"}}>💡 {s.vn||"N/A"}<div style={{marginTop:"4px",fontSize:"10px",color:"#6B7280"}}>RSI {s.rsi} · YTD {s.ytd>0?"+":""}{s.ytd}% · ${s.mc}</div></div>)}</div>}
 function MatrixView({stocks}){const ms=stocks.filter(s=>s.q>0&&s.v>0);const grid={};for(let q=1;q<=3;q++)for(let v=1;v<=3;v++)grid[`${q}-${v}`]=[];ms.forEach(s=>{const k=`${s.q}-${s.v}`;if(grid[k])grid[k].push(s)});return <div><div style={{display:"grid",gridTemplateColumns:"50px 1fr 1fr 1fr",gap:"2px"}}><div/>{["비싼 가격","적정","좋은 가격"].map((l,i)=><div key={i} style={{textAlign:"center",padding:"6px",fontSize:"12px",fontWeight:700,color:i===2?"#00E5A0":i===1?"#a78bfa":"#ef4444"}}>{l}</div>)}{[3,2,1].map(q=><React.Fragment key={q}><div style={{writingMode:"vertical-rl",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"11px",fontWeight:700,color:q===3?"#00E5A0":q===2?"#f59e0b":"#ef4444",transform:"rotate(180deg)"}}>{q===3?"Great":q===2?"Good":"Bad"}</div>{[1,2,3].map(v=>{const k=`${q}-${v}`;return <MatrixCell key={k} stocks={grid[k]} action={MA[k]}/>})}</React.Fragment>)}</div></div>}
-
 function PerfView({stocks}){const secs=["nuclear","power","photonics","infra","materials"];return <div>{secs.map(sec=>{const m=SM[sec];const ss=[...stocks.filter(s=>s.sec===sec&&s.r!=="ETF")].sort((a,b)=>b.ytd-a.ytd);const maxAbs=Math.max(...ss.map(s=>Math.abs(s.ytd)),1);return <div key={sec} style={{marginBottom:"24px"}}><div style={{fontSize:"14px",fontWeight:700,color:m.color,marginBottom:"8px"}}>{m.icon} {m.label}</div>{ss.map((s,i)=>{const w=i===0,l=i===ss.length-1&&ss.length>1;return <div key={s.t} style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px",padding:"6px 10px",background:w?"rgba(0,229,160,0.06)":l?"rgba(255,107,107,0.06)":"transparent",borderRadius:"8px"}}><span style={{width:"14px",fontSize:"12px"}}>{w?"🏆":l?"💀":""}</span><span style={{width:"55px",fontSize:"14px",fontWeight:800,fontFamily:"monospace",color:"#F0F0F0"}}>{s.t}</span><div style={{flex:1,height:"18px",background:"rgba(255,255,255,0.03)",borderRadius:"4px",overflow:"hidden",position:"relative"}}><div style={{position:"absolute",left:s.ytd>=0?"0":"auto",right:s.ytd>=0?"auto":"0",height:"100%",width:`${Math.abs(s.ytd)/maxAbs*100}%`,background:s.ytd>=0?`linear-gradient(90deg,${m.color}44,${m.color})`:"linear-gradient(90deg,#FF6B6B,#FF6B6B44)",borderRadius:"4px"}}/><span style={{position:"absolute",left:s.ytd>=0?`${Math.min(Math.abs(s.ytd)/maxAbs*100+1,85)}%`:"auto",right:s.ytd>=0?"auto":`${Math.min(Math.abs(s.ytd)/maxAbs*100+1,85)}%`,top:"50%",transform:"translateY(-50%)",fontSize:"11px",fontWeight:700,color:s.ytd>=0?"#00E5A0":"#FF6B6B",fontFamily:"monospace"}}>{s.ytd>0?"+":""}{s.ytd}%</span></div><RsiBadge rsi={s.rsi}/></div>})}</div>})}</div>}
-
 // ── SA LP Holdings ──
 const SA_HOLDINGS=[
   {t:"BE",type:"stock",shares:"10.08M",val:"$875.5M",pct:15.87,delta:"+100%",note:"최대 포지션. 신규 진입 후 단숨에 1위"},
@@ -160,7 +153,6 @@ const SA_HOLDINGS=[
   {t:"BW",type:"stock",shares:"1.35M",val:"$8.6M",pct:0.16,delta:"+100%",note:"Babcock & Wilcox. 원자력"},
   {t:"INTC",type:"stock",shares:"1.4K",val:"—",pct:0,delta:"",note:"소량 주식 보유"},
 ];
-
 function SAView(){
   const totalVal=5516758;
   const themes=[
@@ -175,7 +167,6 @@ function SAView(){
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:"1px",background:"rgba(167,139,250,0.06)",borderRadius:"10px",overflow:"hidden",marginBottom:"16px"}}>
       {[{l:"AUM (13F)",v:"$5.52B"},{l:"포지션",v:"29"},{l:"1Y 수익률",v:"+28.9%"},{l:"신규 편입",v:"10"},{l:"콜옵션",v:"3"},{l:"풋옵션",v:"1"}].map((m,i)=><div key={i} style={{background:"#0C0E13",padding:"12px 8px",textAlign:"center"}}><div style={{fontSize:"10px",color:"#6B7280",marginBottom:"4px",textTransform:"uppercase"}}>{m.l}</div><div style={{fontSize:"18px",fontWeight:800,color:"#a78bfa",fontFamily:"monospace"}}>{m.v}</div></div>)}
     </div>
-
     {/* Theme Bars */}
     <div style={{marginBottom:"20px"}}>
       <div style={{fontSize:"13px",fontWeight:700,color:"#E5E7EB",marginBottom:"10px"}}>테마별 배분</div>
@@ -185,7 +176,6 @@ function SAView(){
         <div style={{fontSize:"10px",color:"#6B7280",marginTop:"2px"}}>{th.tickers.join(" · ")}</div>
       </div>)}
     </div>
-
     {/* Holdings Table */}
     <div style={{fontSize:"13px",fontWeight:700,color:"#E5E7EB",marginBottom:"10px"}}>전체 포지션 (포트폴리오 비중순)</div>
     <div style={{overflowX:"auto"}}>
@@ -211,7 +201,6 @@ function SAView(){
         </div>
       })}
     </div>
-
     {/* Insight */}
     <div style={{marginTop:"20px",padding:"14px",background:"rgba(167,139,250,0.06)",border:"1px solid rgba(167,139,250,0.15)",borderRadius:"12px"}}>
       <div style={{fontSize:"13px",fontWeight:700,color:"#a78bfa",marginBottom:"8px"}}>🧠 핵심 인사이트</div>
@@ -222,11 +211,10 @@ function SAView(){
     </div>
   </div>;
 }
-
 // ── News View ──
 function NewsView({apiKey}){
   const[sym,setSym]=useState("NVDA");const[news,setNews]=useState([]);const[loading,setLoading]=useState(false);const[input,setInput]=useState("NVDA");
-  const tickers=initS.filter(s=>s.r!=="ETF").map(s=>s.t);
+  const tickers=initS.filter(s=>s.r!=="ETF"&&!SKIP_FETCH.has(s.t)).map(s=>s.t);
   const load=useCallback(async(s)=>{if(!apiKey){setNews([]);return}setLoading(true);const data=await fhNews(s,apiKey);setNews(data);setLoading(false)},[apiKey]);
   useEffect(()=>{load(sym)},[sym,apiKey]);
   return <div>
@@ -243,7 +231,6 @@ function NewsView({apiKey}){
     </a>):<div style={{padding:"30px",textAlign:"center",color:"#4B5563"}}>{apiKey?"뉴스를 불러오는 중...":"API 키를 입력하세요"}</div>}
   </div>;
 }
-
 // ── Daily Snapshot ──
 function SnapView({stocks}){
   const today=new Date().toLocaleDateString("ko",{year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});
@@ -258,7 +245,6 @@ function SnapView({stocks}){
   const secAvg={};["nuclear","power","photonics","infra","materials"].forEach(sec=>{const ss=stocks.filter(s=>s.sec===sec&&s.r!=="ETF");secAvg[sec]={ch:ss.length?(ss.reduce((a,s)=>a+s.ch,0)/ss.length):0,ytd:ss.length?(ss.reduce((a,s)=>a+s.ytd,0)/ss.length):0}});
   const secSorted=Object.entries(secAvg).sort((a,b)=>b[1].ch-a[1].ch);
   const hotSec=secSorted[0];const coldSec=secSorted[secSorted.length-1];
-
   const Box=({title,icon,color,children})=><div style={{background:color+"08",border:`1px solid ${color}20`,borderRadius:"14px",padding:"18px",flex:"1 1 300px"}}>
     <div style={{fontSize:"15px",fontWeight:800,color,marginBottom:"12px"}}>{icon} {title}</div>{children}
   </div>;
@@ -270,7 +256,6 @@ function SnapView({stocks}){
     <span style={{fontSize:"16px",fontWeight:800,fontFamily:"monospace",color:s.ch>0?"#00E5A0":"#FF6B6B"}}>{s.ch>0?"+":""}{s.ch.toFixed(2)}%</span>
     {showYtd&&<span style={{fontSize:"11px",fontFamily:"monospace",color:s.ytd>0?"#4ECDC4":"#FF9999"}}>YTD {s.ytd>0?"+":""}{s.ytd}%</span>}
   </div>;
-
   return <div>
     {/* Date Header */}
     <div style={{textAlign:"center",marginBottom:"20px"}}>
@@ -278,7 +263,6 @@ function SnapView({stocks}){
         <span style={{fontSize:"18px",fontWeight:800,color:"#F472B6"}}>{today}</span>
       </div>
     </div>
-
     {/* Flow Summary */}
     <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:"14px",padding:"18px",marginBottom:"16px"}}>
       <div style={{fontSize:"15px",fontWeight:800,color:"#E5E7EB",marginBottom:"12px"}}>💰 자금 흐름</div>
@@ -296,20 +280,16 @@ function SnapView({stocks}){
         <span style={{color:"#FF6B6B",fontWeight:700}}>자금 유출:</span> {coldSec[0]&&SM[coldSec[0]]?`${SM[coldSec[0]].icon} ${SM[coldSec[0]].label} (${coldSec[1].ch.toFixed(2)}%)`:"—"}
       </div>
     </div>
-
     {/* 4 Panels */}
     <div style={{display:"flex",gap:"14px",flexWrap:"wrap"}}>
-
       {/* 1. 오늘의 급등 */}
       <Box title="오늘의 급등 TOP 5" icon="🚀" color="#00E5A0">
         {top5.map((s,i)=><Row key={s.t} s={s} i={i} showYtd/>)}
       </Box>
-
       {/* 2. 오늘의 급락 */}
       <Box title="오늘의 급락 TOP 5" icon="💥" color="#FF6B6B">
         {bot5.map((s,i)=><Row key={s.t} s={s} i={i} showYtd/>)}
       </Box>
-
       {/* 3. 모멘텀 강세 */}
       <Box title="모멘텀 강세 (YTD↑)" icon="🔥" color="#FFD93D">
         {momentum.map((s,i)=><div key={s.t} style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"6px"}}>
@@ -320,7 +300,6 @@ function SnapView({stocks}){
           <RsiBadge rsi={s.rsi}/>
         </div>)}
       </Box>
-
       {/* 4. 저평가 / 과매도 */}
       <Box title="하락·과매도 (기회?)" icon="❄️" color="#4ECDC4">
         {oversold.map((s,i)=><div key={s.t} style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"6px"}}>
@@ -332,7 +311,6 @@ function SnapView({stocks}){
         </div>)}
       </Box>
     </div>
-
     {/* RSI Alert */}
     <div style={{display:"flex",gap:"14px",flexWrap:"wrap",marginTop:"14px"}}>
       <Box title="과매수 경고 (RSI≥70)" icon="⚠️" color="#FF6B35">
@@ -352,7 +330,6 @@ function SnapView({stocks}){
         </div>):<div style={{color:"#4B5563"}}>없음</div>}
       </Box>
     </div>
-
     {/* One-liner */}
     <div style={{marginTop:"18px",textAlign:"center",padding:"16px",background:"rgba(244,114,182,0.08)",border:"1px solid rgba(244,114,182,0.2)",borderRadius:"14px"}}>
       <div style={{fontSize:"12px",color:"#F472B6",fontWeight:600,marginBottom:"6px"}}>오늘의 한 줄 요약</div>
@@ -362,62 +339,66 @@ function SnapView({stocks}){
     </div>
   </div>;
 }
-
 function Summ({stocks,color}){const ne=stocks.filter(x=>x.r!=="ETF"),wp=stocks.filter(x=>x.p>0);const au=ne.length?Math.round(ne.reduce((a,x)=>a+x.tu,0)/ne.length):0;const ac=wp.length?(wp.reduce((a,x)=>a+x.ch,0)/wp.length).toFixed(2):"—";const tg=[...ne].sort((a,b)=>b.rg-a.rg)[0];return <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(100px,1fr))",gap:"1px",background:"rgba(255,255,255,0.035)",borderRadius:"10px",overflow:"hidden",marginBottom:"16px"}}>{[{l:"종목",v:`${stocks.length}`},{l:"평균 상승여력",v:`+${au}%`},{l:"오늘 평균",v:`${Number(ac)>0?"+":""}${ac}%`},{l:"Top",v:tg?tg.t:"—"}].map((m,i)=><div key={i} style={{background:"#0C0E13",padding:"12px 8px",textAlign:"center"}}><div style={{fontSize:"10px",color:"#6B7280",marginBottom:"4px",textTransform:"uppercase"}}>{m.l}</div><div style={{fontSize:"18px",fontWeight:800,color,fontFamily:"monospace"}}>{m.v}</div></div>)}</div>}
-
 // ── Manual Price Update ──
-function ManualUpdate({stocks,setStocks,setLastUpdate}){
+function ManualUpdate({stocks,applyUpdates}){
   const[editTicker,setEditTicker]=useState("");
   const[editPrice,setEditPrice]=useState("");
   const[editChange,setEditChange]=useState("");
+  const[msg,setMsg]=useState("");
   const apply=()=>{
-    if(!editTicker)return;
+    if(!editTicker){setMsg("티커를 입력하세요");return}
     const t=editTicker.toUpperCase();
-    const idx=stocks.findIndex(s=>s.t===t);
-    if(idx===-1){alert(`${t} 종목을 찾을 수 없습니다`);return}
-    const updated=[...stocks];
-    if(editPrice)updated[idx]={...updated[idx],p:parseFloat(editPrice)};
-    if(editChange)updated[idx]={...updated[idx],ch:parseFloat(editChange)};
-    setStocks(updated);
-    setLastUpdate("수동 "+new Date().toLocaleTimeString("ko"));
+    if(!stocks.some(s=>s.t===t)){setMsg(`${t} 종목 없음`);return}
+    const patch={};
+    if(editPrice!=="")patch.p=parseFloat(editPrice);
+    if(editChange!=="")patch.ch=parseFloat(editChange);
+    applyUpdates({[t]:patch});
+    setMsg(`${t} 적용 완료`);
     setEditTicker("");setEditPrice("");setEditChange("");
+    setTimeout(()=>setMsg(""),2500);
   };
   const bulkRef=useRef(null);
   const bulkApply=()=>{
-    const text=bulkRef.current?.value;if(!text)return;
+    const text=bulkRef.current?.value;if(!text){setMsg("붙여넣을 데이터가 없습니다");return}
     const lines=text.trim().split("\n");
-    const updated=[...stocks];
-    let count=0;
+    const updates={};let count=0;
     lines.forEach(line=>{
       const parts=line.split(/[\t,]+/).map(s=>s.trim());
       if(parts.length>=2){
         const t=parts[0].toUpperCase().replace("$","");
         const p=parseFloat(parts[1]);
-        const ch=parts[2]?parseFloat(parts[2]):0;
-        const idx=updated.findIndex(s=>s.t===t);
-        if(idx!==-1&&!isNaN(p)){updated[idx]={...updated[idx],p,ch:isNaN(ch)?0:ch};count++}
+        const ch=parts[2]?parseFloat(parts[2]):null;
+        if(stocks.some(s=>s.t===t)&&!isNaN(p)){
+          updates[t]={p,...(ch!==null&&!isNaN(ch)?{ch}:{})};
+          count++;
+        }
       }
     });
-    setStocks(updated);
-    setLastUpdate(`수동 ${count}개 갱신 `+new Date().toLocaleTimeString("ko"));
+    if(count===0){setMsg("유효한 행이 없습니다");return}
+    applyUpdates(updates);
+    setMsg(`${count}개 종목 갱신`);
     bulkRef.current.value="";
+    setTimeout(()=>setMsg(""),2500);
   };
-  return <div style={{borderTop:"1px solid rgba(0,229,255,0.08)",paddingTop:"12px"}}>
-    <div style={{fontSize:"12px",color:"#F472B6",fontWeight:700,marginBottom:"8px"}}>✏️ 수동 가격 업데이트</div>
+  return <div style={{borderTop:"1px solid rgba(0,229,255,0.08)",paddingTop:"12px",marginTop:"12px"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
+      <div style={{fontSize:"12px",color:"#F472B6",fontWeight:700}}>✏️ 수동 가격 업데이트 <span style={{color:"#6B7280",fontWeight:400,fontSize:"10px"}}>(KRX·Finnhub 미지원 종목용)</span></div>
+      {msg&&<span style={{fontSize:"11px",color:"#00E5A0",fontFamily:"monospace"}}>{msg}</span>}
+    </div>
     <div style={{display:"flex",gap:"6px",alignItems:"center",flexWrap:"wrap",marginBottom:"10px"}}>
-      <input value={editTicker} onChange={e=>setEditTicker(e.target.value.toUpperCase())} placeholder="티커 (예: NVDA)" style={{padding:"6px 10px",borderRadius:"6px",border:"1px solid rgba(244,114,182,0.2)",background:"rgba(0,0,0,0.3)",color:"#E5E7EB",fontSize:"12px",width:"100px",outline:"none"}}/>
+      <input value={editTicker} onChange={e=>setEditTicker(e.target.value.toUpperCase())} placeholder="티커 (예: NVDA)" style={{padding:"6px 10px",borderRadius:"6px",border:"1px solid rgba(244,114,182,0.2)",background:"rgba(0,0,0,0.3)",color:"#E5E7EB",fontSize:"12px",width:"130px",outline:"none"}}/>
       <input value={editPrice} onChange={e=>setEditPrice(e.target.value)} placeholder="가격" type="number" step="0.01" style={{padding:"6px 10px",borderRadius:"6px",border:"1px solid rgba(244,114,182,0.2)",background:"rgba(0,0,0,0.3)",color:"#E5E7EB",fontSize:"12px",width:"100px",outline:"none"}}/>
-      <input value={editChange} onChange={e=>setEditChange(e.target.value)} placeholder="등락%" type="number" step="0.01" style={{padding:"6px 10px",borderRadius:"6px",border:"1px solid rgba(244,114,182,0.2)",background:"rgba(0,0,0,0.3)",color:"#E5E7EB",fontSize:"12px",width:"80px",outline:"none"}}/>
+      <input value={editChange} onChange={e=>setEditChange(e.target.value)} placeholder="등락%" type="number" step="0.01" style={{padding:"6px 10px",borderRadius:"6px",border:"1px solid rgba(244,114,182,0.2)",background:"rgba(0,0,0,0.3)",color:"#E5E7EB",fontSize:"12px",width:"90px",outline:"none"}}/>
       <button onClick={apply} style={{padding:"6px 14px",borderRadius:"6px",background:"#F472B6",color:"#000",fontSize:"12px",fontWeight:700,cursor:"pointer",border:"none"}}>적용</button>
     </div>
-    <div style={{fontSize:"11px",color:"#6B7280",marginBottom:"6px"}}>일괄 입력 (한 줄에: 티커, 가격, 등락%)</div>
+    <div style={{fontSize:"11px",color:"#6B7280",marginBottom:"6px"}}>일괄 입력 (한 줄에: 티커, 가격, 등락% · CSV/TSV OK)</div>
     <div style={{display:"flex",gap:"6px",alignItems:"flex-start"}}>
-      <textarea ref={bulkRef} placeholder={"NVDA, 205.30, 2.5\nINTC, 70.12, -1.2\nBE, 215.00, 3.1"} rows={4} style={{flex:1,padding:"8px 10px",borderRadius:"6px",border:"1px solid rgba(244,114,182,0.15)",background:"rgba(0,0,0,0.3)",color:"#E5E7EB",fontSize:"11px",outline:"none",fontFamily:"monospace",resize:"vertical"}}/>
+      <textarea ref={bulkRef} placeholder={"NVDA, 205.30, 2.5\nINTC, 70.12, -1.2\n047040, 23.80, 1.5"} rows={4} style={{flex:1,padding:"8px 10px",borderRadius:"6px",border:"1px solid rgba(244,114,182,0.15)",background:"rgba(0,0,0,0.3)",color:"#E5E7EB",fontSize:"11px",outline:"none",fontFamily:"monospace",resize:"vertical"}}/>
       <button onClick={bulkApply} style={{padding:"8px 14px",borderRadius:"6px",background:"#F472B6",color:"#000",fontSize:"12px",fontWeight:700,cursor:"pointer",border:"none",height:"fit-content"}}>일괄 적용</button>
     </div>
   </div>;
 }
-
 // ── Main App ──
 function App(){
   const[tab,setTab]=useState("nuclear");
@@ -426,83 +407,124 @@ function App(){
   const[apiKey,setApiKey]=useState(()=>localStorage.getItem("fh_key")||"");
   const[showSettings,setShowSettings]=useState(false);
   const[keyInput,setKeyInput]=useState(apiKey);
-  const[stocks,setStocks]=useState(initS);
+  // Load persisted overrides on mount
+  const[stocks,setStocks]=useState(()=>{
+    try{
+      const saved=JSON.parse(localStorage.getItem("px_overrides")||"{}");
+      return initS.map(s=>saved[s.t]?{...s,...saved[s.t]}:s);
+    }catch{return initS}
+  });
   const[fetching,setFetching]=useState(false);
-  const[lastUpdate,setLastUpdate]=useState(null);
+  const[lastUpdate,setLastUpdate]=useState(()=>localStorage.getItem("px_lastUpdate")||null);
   const timerRef=useRef(null);
-
+  const stocksRef=useRef(stocks);
+  useEffect(()=>{stocksRef.current=stocks},[stocks]);
   const sec=SM[tab];const isSpecial=["heatmap","matrix","perf","sa","snap","news"].includes(tab);
   const ss=stocks.filter(s=>s.sec===tab);
   const SO=[{k:"default",l:"기본"},{k:"change",l:"등락률"},{k:"ytd",l:"YTD"},{k:"targetUpside",l:"상승여력"},{k:"rsi",l:"RSI"},{k:"mcap",l:"시총"}];
-
-  // Fetch live prices
+  // Persist overrides helper
+  const saveOverrides=useCallback((updatedStocks)=>{
+    const overrides={};
+    updatedStocks.forEach(s=>{
+      const base=initS.find(b=>b.t===s.t);
+      if(base&&(s.p!==base.p||s.ch!==base.ch)){overrides[s.t]={p:s.p,ch:s.ch}}
+    });
+    localStorage.setItem("px_overrides",JSON.stringify(overrides));
+  },[]);
+  const applyUpdates=useCallback((patches)=>{
+    setStocks(prev=>{
+      const next=prev.map(s=>patches[s.t]?{...s,...patches[s.t]}:s);
+      saveOverrides(next);
+      return next;
+    });
+    const ts=new Date().toLocaleTimeString("ko");
+    setLastUpdate("수동 "+ts);
+    localStorage.setItem("px_lastUpdate","수동 "+ts);
+  },[saveOverrides]);
+  // Fetch live prices (uses stocksRef — no interval-reset loop)
   const fetchAll=useCallback(async()=>{
     if(!apiKey)return;
     setFetching(true);
-    const updated=[...stocks];
-    for(let i=0;i<updated.length;i++){
-      const s=updated[i];
-      if(s.r==="ETF"&&!s.t.match(/^[A-Z]{1,5}$/))continue;
+    const current=stocksRef.current;
+    const patches={};
+    let reqCount=0;
+    for(let i=0;i<current.length;i++){
+      const s=current[i];
+      if(s.r==="ETF")continue;
+      if(SKIP_FETCH.has(s.t))continue;
       const quote=await fhQuote(s.t,apiKey);
-      if(quote&&quote.price>0){updated[i]={...s,p:quote.price,ch:quote.changePct||0}}
-      if(i%28===27)await delay(60000); // rate limit
+      if(quote&&quote.price>0){patches[s.t]={p:quote.price,ch:quote.changePct||0}}
+      reqCount++;
+      if(reqCount%50===0)await delay(61000); // Finnhub free: 60 req/min
     }
-    setStocks(updated);
-    setLastUpdate(new Date().toLocaleTimeString("ko"));
+    if(Object.keys(patches).length){
+      setStocks(prev=>{
+        const next=prev.map(s=>patches[s.t]?{...s,...patches[s.t]}:s);
+        saveOverrides(next);
+        return next;
+      });
+    }
+    const ts=new Date().toLocaleTimeString("ko");
+    setLastUpdate(ts);
+    localStorage.setItem("px_lastUpdate",ts);
     setFetching(false);
-  },[apiKey,stocks]);
-
+  },[apiKey,saveOverrides]);
   useEffect(()=>{
     if(apiKey){fetchAll();timerRef.current=setInterval(fetchAll,5*60*1000)}
     return()=>{if(timerRef.current)clearInterval(timerRef.current)};
-  },[apiKey]);
-
-  const saveKey=()=>{localStorage.setItem("fh_key",keyInput);setApiKey(keyInput);setShowSettings(false)};
-
+  },[apiKey,fetchAll]);
+  const resetOverrides=()=>{
+    if(!confirm("수동 편집한 가격을 초기화할까요?"))return;
+    localStorage.removeItem("px_overrides");
+    setStocks(initS);
+    setLastUpdate(null);
+    localStorage.removeItem("px_lastUpdate");
+  };
+  const saveKey=()=>{localStorage.setItem("fh_key",keyInput);setApiKey(keyInput)};
+  const clearKey=()=>{localStorage.removeItem("fh_key");setApiKey("");setKeyInput("")};
   const fs=useMemo(()=>{
     let st=[...ss];
     if(q){const ql=q.toLowerCase();st=st.filter(s=>s.t.toLowerCase().includes(ql)||s.n.toLowerCase().includes(ql))}
     if(sort==="change")st.sort((a,b)=>b.ch-a.ch);else if(sort==="ytd")st.sort((a,b)=>b.ytd-a.ytd);else if(sort==="targetUpside")st.sort((a,b)=>b.tu-a.tu);else if(sort==="rsi")st.sort((a,b)=>b.rsi-a.rsi);else if(sort==="mcap")st.sort((a,b)=>parseMcap(b.mc)-parseMcap(a.mc));
     return st;
   },[tab,sort,q,stocks]);
-
+  const dateStr=new Date().toLocaleDateString("ko",{year:"numeric",month:"2-digit",day:"2-digit"});
   return <div style={{minHeight:"100vh",background:"#080A0F",color:"#E5E7EB",fontFamily:"'Inter',system-ui,sans-serif"}}>
     {/* Header */}
-    <div style={{padding:"20px 20px 10px",borderBottom:"1px solid rgba(255,255,255,.04)",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+    <div style={{padding:"20px 20px 10px",borderBottom:"1px solid rgba(255,255,255,.04)",display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:"12px"}}>
       <div>
-        <div style={{display:"flex",alignItems:"center",gap:"7px",marginBottom:"3px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"7px",marginBottom:"3px",flexWrap:"wrap"}}>
           <div style={{width:"7px",height:"7px",borderRadius:"50%",background:sec.color,animation:"pl 2s infinite",boxShadow:`0 0 8px ${sec.color}50`}}/>
           <span style={{fontSize:"11px",color:"#6B7280",textTransform:"uppercase",letterSpacing:"1.5px",fontWeight:600}}>AI Only</span>
           {fetching&&<span className="spinner"/>}
           {lastUpdate&&<span style={{fontSize:"10px",color:"#4B5563"}}>· 갱신 {lastUpdate}</span>}
         </div>
         <h1 style={{fontSize:"24px",fontWeight:800,margin:"5px 0 3px",background:`linear-gradient(135deg,${sec.color},#fff,${sec.color})`,backgroundSize:"200% 200%",animation:"gl 4s ease infinite",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>AI 섹터 종합 대시보드</h1>
-        <p style={{fontSize:"13px",color:"#6B7280"}}>{stocks.length}종목 · 11탭 · 2026.04.18</p>
+        <p style={{fontSize:"13px",color:"#6B7280"}}>{stocks.length}종목 · 11탭 · {dateStr}</p>
       </div>
       <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-        <button onClick={fetchAll} disabled={fetching||!apiKey} style={{padding:"8px 16px",borderRadius:"8px",border:"1px solid rgba(0,229,255,0.3)",background:apiKey?"rgba(0,229,255,0.12)":"rgba(255,255,255,0.04)",color:apiKey?"#00E5FF":"#4B5563",fontSize:"13px",fontWeight:700,cursor:apiKey?"pointer":"not-allowed",outline:"none"}}>{fetching?"⏳ 갱신중...":"↻ 전체 업데이트"}</button>
-        <button onClick={()=>setShowSettings(!showSettings)} style={{padding:"8px 12px",borderRadius:"8px",border:"1px solid rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.04)",color:"#9CA3AF",fontSize:"12px",cursor:"pointer",outline:"none"}}>⚙️</button>
+        <button onClick={fetchAll} disabled={fetching||!apiKey} title={apiKey?"Finnhub 전체 갱신":"API 키를 먼저 입력하세요"} style={{padding:"8px 16px",borderRadius:"8px",border:"1px solid rgba(0,229,255,0.3)",background:apiKey?"rgba(0,229,255,0.12)":"rgba(255,255,255,0.04)",color:apiKey?"#00E5FF":"#4B5563",fontSize:"13px",fontWeight:700,cursor:apiKey?"pointer":"not-allowed",outline:"none"}}>{fetching?"⏳ 갱신중...":"↻ 전체 업데이트"}</button>
+        <button onClick={()=>setShowSettings(!showSettings)} style={{padding:"8px 12px",borderRadius:"8px",border:"1px solid rgba(255,255,255,0.08)",background:showSettings?"rgba(0,229,255,0.1)":"rgba(255,255,255,0.04)",color:"#9CA3AF",fontSize:"12px",cursor:"pointer",outline:"none"}}>⚙️</button>
       </div>
     </div>
-
     {/* Settings */}
-    {showSettings&&<div style={{padding:"12px 20px",background:"rgba(0,229,255,0.04)",borderBottom:"1px solid rgba(0,229,255,0.1)",animation:"fi .2s ease"}}>
+    {showSettings&&<div style={{padding:"14px 20px",background:"rgba(0,229,255,0.04)",borderBottom:"1px solid rgba(0,229,255,0.1)",animation:"fi .2s ease"}}>
       <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
         <span style={{fontSize:"12px",color:"#00E5FF",fontWeight:600}}>Finnhub API Key:</span>
         <input value={keyInput} onChange={e=>setKeyInput(e.target.value)} type="password" placeholder="cxxxxxxxxxx" style={{padding:"6px 10px",borderRadius:"6px",border:"1px solid rgba(0,229,255,0.2)",background:"rgba(0,0,0,0.3)",color:"#E5E7EB",fontSize:"12px",width:"260px",outline:"none"}}/>
         <button onClick={saveKey} style={{padding:"6px 14px",borderRadius:"6px",background:"#00E5FF",color:"#000",fontSize:"12px",fontWeight:700,cursor:"pointer",border:"none"}}>저장</button>
+        {apiKey&&<button onClick={clearKey} style={{padding:"6px 10px",borderRadius:"6px",background:"rgba(255,107,107,0.12)",color:"#FF6B6B",fontSize:"11px",fontWeight:600,cursor:"pointer",border:"1px solid rgba(255,107,107,0.2)"}}>제거</button>}
+        <button onClick={resetOverrides} style={{padding:"6px 10px",borderRadius:"6px",background:"rgba(244,114,182,0.08)",color:"#F472B6",fontSize:"11px",fontWeight:600,cursor:"pointer",border:"1px solid rgba(244,114,182,0.2)",marginLeft:"auto"}}>가격 초기화</button>
         <span style={{fontSize:"10px",color:"#6B7280"}}>무료: <a href="https://finnhub.io/register" target="_blank" style={{color:"#00E5FF"}}>finnhub.io</a></span>
       </div>
+      <ManualUpdate stocks={stocks} applyUpdates={applyUpdates}/>
     </div>}
-
     <WinnersBar stocks={stocks}/>
-
     {/* Tabs */}
     <div style={{display:"flex",gap:"2px",padding:"8px 20px",overflowX:"auto",borderBottom:"1px solid rgba(255,255,255,.03)"}}>
       {Object.entries(SM).map(([k,s])=>{const a=k===tab;
         return <button key={k} onClick={()=>{setTab(k);setSort("default");setQ("")}} style={{display:"flex",alignItems:"center",gap:"4px",padding:"7px 12px",borderRadius:"8px",border:a?`1px solid ${s.color}40`:"1px solid transparent",background:a?s.cd:"transparent",color:a?s.color:"#6B7280",fontSize:"12px",fontWeight:a?700:500,cursor:"pointer",whiteSpace:"nowrap",outline:"none"}}><span style={{fontSize:"14px"}}>{s.icon}</span>{s.label}</button>})}
     </div>
-
     {/* Content */}
     <div style={{padding:"14px 20px"}}>
       <p style={{fontSize:"13px",color:"#9CA3AF",marginBottom:"12px"}}><span style={{color:sec.color,fontWeight:700}}>{sec.icon} {sec.label}</span> — {sec.desc}</p>
@@ -528,10 +550,9 @@ function App(){
         </div>
       </>}
     </div>
-    <div style={{padding:"14px 20px",borderTop:"1px solid rgba(255,255,255,.03)",textAlign:"center",fontSize:"10px",color:"#4B5563"}}>2026년 4월 · 투자 조언 아님</div>
+    <div style={{padding:"14px 20px",borderTop:"1px solid rgba(255,255,255,.03)",textAlign:"center",fontSize:"10px",color:"#4B5563"}}>{dateStr} · 투자 조언 아님</div>
   </div>;
 }
-
 ReactDOM.render(<App/>,document.getElementById('root'));
 </script>
 </body>
