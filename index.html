@@ -1062,12 +1062,65 @@
         box-shadow: 0 20px 48px rgba(0,0,0,0.26);
       }
       .ai-refined .tabs-shell {
-        position: sticky;
+        position: fixed !important;
+        left: 0;
         top: 0;
+        bottom: 0;
+        width: 246px;
         z-index: 80;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+        padding: 16px 12px !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
         background: rgba(7,10,15,0.88);
-        border-bottom-color: rgba(255,255,255,0.04);
-        box-shadow: 0 14px 30px rgba(0,0,0,0.22);
+        border-right: 1px solid rgba(255,255,255,0.06);
+        border-bottom: 0 !important;
+        box-shadow: 18px 0 34px rgba(0,0,0,0.22);
+      }
+      .ai-refined .tabs-shell::before {
+        content: "Views";
+        display: block;
+        padding: 2px 8px 6px;
+        color: #8FA3BF;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: .16em;
+        text-transform: uppercase;
+      }
+      .ai-refined .tabs-shell > button {
+        width: 100% !important;
+        justify-content: flex-start !important;
+        min-height: 46px;
+      }
+      .ai-refined .tabs-shell > button span:last-child {
+        margin-left: auto !important;
+      }
+      .ai-refined #root {
+        padding-left: 246px;
+      }
+      .ai-refined .hero-grid {
+        padding-top: 20px;
+      }
+      .ai-refined .live-controls {
+        width: 100%;
+        margin-left: 0 !important;
+        margin-top: auto;
+        padding: 14px 4px 0 !important;
+        border-top: 1px solid rgba(255,255,255,0.06);
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .ai-refined .live-status {
+        white-space: normal;
+        line-height: 1.35;
+        padding: 0 4px;
+      }
+      .ai-refined .live-control-btn {
+        width: 100%;
+        text-align: center;
       }
       .ai-refined .tabs-shell button[draggable="true"] {
         cursor: grab;
@@ -1088,6 +1141,32 @@
       }
       .ai-refined .hero-grid > * {
         align-self: start;
+      }
+      @media (max-width: 640px) {
+        .ai-refined #root {
+          padding-left: 76px;
+        }
+        .ai-refined .tabs-shell {
+          width: 76px;
+          padding: 12px 8px !important;
+        }
+        .ai-refined .tabs-shell::before,
+        .ai-refined .tabs-shell > button span:not(:first-child),
+        .ai-refined .live-status,
+        .ai-refined .live-control-btn:not([data-live-state]) {
+          display: none !important;
+        }
+        .ai-refined .tabs-shell > button {
+          justify-content: center !important;
+          padding: 11px 8px !important;
+          font-size: 0 !important;
+        }
+        .ai-refined .tabs-shell > button span:first-child {
+          font-size: 18px !important;
+        }
+        .ai-refined .live-controls {
+          padding-top: 10px !important;
+        }
       }
       .ai-refined .pill,
       .ai-refined .panel-soft {
@@ -2155,7 +2234,7 @@ Error generating stack: `+i.message+`
           breakouts.style.color = active ? '#86efac' : '#9BB0C8';
         }
 
-        Array.from(document.querySelectorAll('.tabs-shell button')).forEach((button) => {
+        Array.from(document.querySelectorAll('.tabs-shell > button')).forEach((button) => {
           if (button === custom || button === performers || button === portfolios || button === breakouts) return;
           if (button.dataset.bottomsBound === '1') return;
           button.dataset.bottomsBound = '1';
@@ -2596,90 +2675,42 @@ Error generating stack: `+i.message+`
         return text.replace(/\d+/g, '').trim().toLowerCase().replace(/\s+/g, '-');
       }
 
+      const DEFAULT_TAB_ORDER = ['daily', 'nuclear', 'power', 'photonics', 'infra', 'materials', 'bottoms', 'performers', 'portfolios', 'breakouts'];
+
       function applySavedTabOrder() {
         const shell = document.querySelector('.tabs-shell');
         if (!shell) return false;
-        const buttons = Array.from(shell.querySelectorAll('button'));
+        const buttons = Array.from(shell.querySelectorAll(':scope > button'));
         if (!buttons.length) return false;
 
         buttons.forEach((button) => {
           if (!button.dataset.tabId) button.dataset.tabId = labelTabButton(button);
         });
 
-        let saved = [];
-        try {
-          saved = JSON.parse(localStorage.getItem('ai_tab_order_v1') || '[]');
-        } catch (_) {
-          saved = [];
-        }
-
         const currentIds = buttons.map((button) => button.dataset.tabId).filter(Boolean);
         const merged = [
-          ...saved.filter((id) => currentIds.includes(id)),
-          ...currentIds.filter((id) => !saved.includes(id)),
+          ...DEFAULT_TAB_ORDER.filter((id) => currentIds.includes(id)),
+          ...currentIds.filter((id) => !DEFAULT_TAB_ORDER.includes(id)),
         ];
 
         merged.forEach((id) => {
-          const button = shell.querySelector(`button[data-tab-id="${id}"]`);
-          if (button) shell.appendChild(button);
+          const button = shell.querySelector(`:scope > button[data-tab-id="${id}"]`);
+          if (button) shell.insertBefore(button, shell.querySelector(':scope > .live-controls'));
         });
 
-        if (JSON.stringify(saved) !== JSON.stringify(merged)) {
-          localStorage.setItem('ai_tab_order_v1', JSON.stringify(merged));
-        }
+        localStorage.setItem('ai_tab_order_v1', JSON.stringify(merged));
         return true;
       }
 
       function setupTabDrag() {
         const shell = document.querySelector('.tabs-shell');
         if (!shell) return false;
-        const buttons = Array.from(shell.querySelectorAll('button'));
+        const buttons = Array.from(shell.querySelectorAll(':scope > button'));
         if (!buttons.length) return false;
-
         buttons.forEach((button) => {
           if (!button.dataset.tabId) button.dataset.tabId = labelTabButton(button);
-          button.setAttribute('draggable', 'true');
-          if (button.dataset.dragBound === '1') return;
-          button.dataset.dragBound = '1';
-
-          button.addEventListener('dragstart', (event) => {
-            button.classList.add('tab-dragging');
-            event.dataTransfer.effectAllowed = 'move';
-            event.dataTransfer.setData('text/plain', button.dataset.tabId);
-          });
-
-          button.addEventListener('dragend', () => {
-            button.classList.remove('tab-dragging');
-            shell.querySelectorAll('.tab-drag-over').forEach((el) => el.classList.remove('tab-drag-over'));
-          });
-
-          button.addEventListener('dragover', (event) => {
-            event.preventDefault();
-            if (!button.classList.contains('tab-dragging')) button.classList.add('tab-drag-over');
-            event.dataTransfer.dropEffect = 'move';
-          });
-
-          button.addEventListener('dragleave', () => {
-            button.classList.remove('tab-drag-over');
-          });
-
-          button.addEventListener('drop', (event) => {
-            event.preventDefault();
-            button.classList.remove('tab-drag-over');
-            const draggedId = event.dataTransfer.getData('text/plain');
-            const targetId = button.dataset.tabId;
-            if (!draggedId || !targetId || draggedId === targetId) return;
-
-            const ordered = Array.from(shell.querySelectorAll('button')).map((el) => el.dataset.tabId);
-            const from = ordered.indexOf(draggedId);
-            const to = ordered.indexOf(targetId);
-            if (from === -1 || to === -1) return;
-
-            const [moved] = ordered.splice(from, 1);
-            ordered.splice(to, 0, moved);
-            localStorage.setItem('ai_tab_order_v1', JSON.stringify(ordered));
-            applySavedTabOrder();
-          });
+          button.removeAttribute('draggable');
+          button.classList.remove('tab-dragging', 'tab-drag-over');
         });
         return true;
       }
