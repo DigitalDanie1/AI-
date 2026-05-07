@@ -1,571 +1,1770 @@
 <!doctype html>
 <html lang="ko">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Daniel Alpha Radar</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Action Desk</title>
     <meta
       name="description"
-      content="A standalone personal market intelligence dashboard for AI infrastructure themes."
+      content="Action-first AI infrastructure stock dashboard with live technical context."
     />
     <style>
       :root {
-        --bg: #090d12;
-        --panel: #10161d;
-        --panel-2: #151d26;
-        --line: #273241;
-        --soft: rgba(255, 255, 255, 0.07);
-        --text: #eef4fb;
-        --muted: #8d9aad;
-        --faint: #586678;
-        --green: #31d18f;
-        --red: #ff6b81;
-        --cyan: #55c7ff;
-        --amber: #f3bd45;
+        color-scheme: dark;
+        --bg: #070a0f;
+        --panel: rgba(15, 20, 28, 0.92);
+        --panel-2: rgba(255, 255, 255, 0.035);
+        --line: rgba(203, 213, 225, 0.1);
+        --text: #f7fbff;
+        --muted: #9aabba;
+        --buy: #3ee6ae;
+        --wait: #ffd166;
+        --risk: #ff7b7b;
+        --info: #8bbdff;
+        --blue: #60a5fa;
+        --violet: #a78bfa;
+        --orange: #fb923c;
+        --cyan: #22d3ee;
+        --green: #34d399;
+        --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       }
 
-      * { box-sizing: border-box; }
-      html { scroll-behavior: smooth; }
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+      }
+
       body {
         margin: 0;
         color: var(--text);
-        background: var(--bg);
-        font-family: Inter, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        font-family: var(--sans);
+        background:
+          radial-gradient(circle at 20% 0%, rgba(96, 165, 250, 0.16), transparent 28%),
+          radial-gradient(circle at 92% 6%, rgba(52, 211, 153, 0.11), transparent 24%),
+          radial-gradient(circle at 50% 100%, rgba(251, 146, 60, 0.08), transparent 30%),
+          linear-gradient(180deg, #0b1017 0%, var(--bg) 100%);
       }
-      button, input { font: inherit; }
-      button { cursor: pointer; }
-      a { color: inherit; text-decoration: none; }
 
-      .top, .strip, main, footer {
-        width: min(1440px, calc(100% - 28px));
-        margin: 0 auto;
+      button,
+      input {
+        font: inherit;
       }
-      header {
+
+      button {
+        cursor: pointer;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .app {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 270px minmax(0, 1fr);
+      }
+
+      .rail {
         position: sticky;
         top: 0;
-        z-index: 10;
-        border-bottom: 1px solid var(--line);
-        background: rgba(9, 13, 18, 0.94);
-        backdrop-filter: blur(16px);
+        height: 100vh;
+        padding: 18px 14px;
+        border-right: 1px solid var(--line);
+        background: rgba(6, 9, 14, 0.82);
+        backdrop-filter: blur(18px);
+        overflow: auto;
       }
-      .top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 18px;
-        min-height: 62px;
-      }
-      .brand, nav, .sync, .strip, .title-row, .dashboard, .theme-btn,
-      .metrics, .alerts article, .heat button, .section-title, footer {
-        display: flex;
-        align-items: center;
-      }
-      .brand { gap: 10px; min-width: 250px; }
-      .mark {
-        display: grid;
-        width: 34px;
-        height: 34px;
-        place-items: center;
-        border: 1px solid rgba(85, 199, 255, 0.42);
-        border-radius: 8px;
-        color: var(--cyan);
-        background: rgba(85, 199, 255, 0.1);
-        font-weight: 900;
-      }
-      .brand strong, .brand small { display: block; }
-      .brand strong { font-size: 14px; }
-      .brand small, .sync, .strip span, .strip em, .meta, .panel-title,
-      .theme-btn em, .focus p, .metrics span, td span, .alerts span,
-      .card span, footer span { color: var(--muted); font-size: 12px; font-style: normal; }
-      nav { gap: 4px; }
-      nav a {
-        padding: 8px 10px;
-        border-radius: 7px;
-        color: var(--muted);
-        font-size: 13px;
-      }
-      nav a:hover { color: var(--text); background: var(--panel-2); }
-      .sync {
-        gap: 8px;
-        padding: 8px 10px;
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        background: var(--panel);
-        white-space: nowrap;
-      }
-      .sync i {
-        width: 7px;
-        height: 7px;
-        border-radius: 999px;
-        background: var(--green);
-        box-shadow: 0 0 14px rgba(49, 209, 143, 0.8);
-      }
-      .strip {
-        gap: 8px;
-        overflow-x: auto;
-        padding: 0 0 12px;
-      }
-      .strip article {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 2px 10px;
-        min-width: 160px;
-        padding: 9px 10px;
-        border: 1px solid var(--soft);
-        border-radius: 7px;
-        background: rgba(255, 255, 255, 0.025);
-      }
-      .strip strong { font-size: 15px; }
-      .strip em { align-self: end; font-weight: 800; }
-      .up { color: var(--green) !important; }
-      .down { color: var(--red) !important; }
 
-      main { padding: 22px 0 42px; }
+      .brand {
+        padding: 6px 8px 18px;
+      }
+
+      .brand-kicker,
       .eyebrow {
-        margin: 0 0 6px;
-        color: var(--cyan);
+        color: var(--muted);
         font-size: 11px;
-        font-weight: 800;
+        font-weight: 850;
         letter-spacing: 0.12em;
         text-transform: uppercase;
       }
-      .title-row {
-        justify-content: space-between;
-        gap: 18px;
-        margin-bottom: 14px;
-      }
-      h1 { margin: 0; font-size: clamp(30px, 4vw, 46px); letter-spacing: 0; }
-      h2, h3 { margin: 0; letter-spacing: 0; }
-      .meta { text-align: right; }
-      .meta strong { display: block; margin-top: 4px; color: var(--text); font-size: 13px; }
 
-      .grid {
-        display: grid;
-        grid-template-columns: 280px minmax(0, 1fr) 310px;
-        gap: 12px;
+      .brand-title {
+        margin-top: 8px;
+        font-size: 28px;
+        font-weight: 900;
+        line-height: 1.02;
       }
-      .rail, .focus, .side section, .card, .table-wrap {
+
+      .status {
+        margin: 12px 8px 16px;
+        padding: 12px;
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: var(--panel);
+        background: var(--panel-2);
+        color: #c7d2de;
+        font-size: 13px;
+        line-height: 1.45;
       }
-      .rail, .side section { padding: 12px; }
-      .panel-title {
-        justify-content: space-between;
-        gap: 10px;
-        margin-bottom: 10px;
-      }
-      .panel-title b { color: var(--cyan); font-size: 12px; }
-      .theme-btn {
-        width: 100%;
-        justify-content: space-between;
-        gap: 10px;
-        min-height: 56px;
-        margin-bottom: 7px;
-        padding: 10px 12px;
-        color: var(--text);
-        text-align: left;
-        border: 1px solid var(--soft);
-        border-radius: 7px;
-        background: transparent;
-      }
-      .theme-btn:hover, .theme-btn.active {
-        border-color: rgba(85, 199, 255, 0.5);
-        background: rgba(85, 199, 255, 0.08);
-      }
-      .theme-btn span { display: block; font-weight: 800; }
-      .theme-btn em { display: block; margin-top: 3px; }
-      .theme-btn strong { color: var(--green); font-size: 22px; }
 
-      .focus {
-        padding: 18px;
-        background: linear-gradient(180deg, rgba(85, 199, 255, 0.07), transparent 240px), var(--panel);
-      }
-      .focus-top {
+      .nav {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 112px;
-        gap: 20px;
-        align-items: start;
+        gap: 7px;
       }
-      .focus h2 { font-size: clamp(28px, 4vw, 44px); }
-      .focus p:not(.eyebrow) { max-width: 820px; margin: 10px 0 0; line-height: 1.65; }
-      .score {
-        padding: 14px;
-        border: 1px solid rgba(85, 199, 255, 0.32);
+
+      .nav button,
+      .chip-button {
+        border: 1px solid transparent;
         border-radius: 8px;
-        background: rgba(85, 199, 255, 0.08);
-        text-align: center;
-      }
-      .score span { color: var(--muted); font-size: 12px; }
-      .score strong { display: block; color: var(--cyan); font-size: 42px; line-height: 1; }
-      .metrics { gap: 8px; margin: 16px 0; }
-      .metrics article {
-        flex: 1;
-        padding: 12px;
-        border: 1px solid var(--soft);
-        border-radius: 7px;
-        background: rgba(255, 255, 255, 0.025);
-      }
-      .metrics strong { display: block; margin-top: 5px; }
-      .table-wrap { overflow-x: auto; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { padding: 12px; border-bottom: 1px solid var(--soft); text-align: left; }
-      th {
-        color: var(--faint);
-        font-size: 11px;
+        background: transparent;
+        color: #b8c5d2;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 44px;
+        padding: 10px 12px;
         font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
+        text-align: left;
       }
-      td { color: #dce6f2; font-size: 13px; }
-      td strong, td span { display: block; }
-      td span {
-        max-width: 260px;
-        margin-top: 3px;
+
+      .nav button.is-active {
+        border-color: rgba(139, 189, 255, 0.36);
+        background: rgba(96, 165, 250, 0.13);
+        color: #dcebff;
+      }
+
+      .nav-count {
+        margin-left: auto;
+        border-radius: 999px;
+        padding: 2px 8px;
+        background: rgba(255, 255, 255, 0.06);
+        color: #98a9bb;
+        font-size: 12px;
+      }
+
+      .icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 30px;
+        border: 1px solid rgba(255, 255, 255, 0.11);
+        background: rgba(255, 255, 255, 0.055);
+        color: var(--icon-color, #dcebff);
+      }
+
+      .icon svg {
+        width: 18px;
+        height: 18px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .icon.small {
+        width: 24px;
+        height: 24px;
+        flex-basis: 24px;
+        border-radius: 7px;
+      }
+
+      .icon.small svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      .icon.big {
+        width: 42px;
+        height: 42px;
+        flex-basis: 42px;
+        border-radius: 10px;
+      }
+
+      .icon.big svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      .ticker-line {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+      }
+
+      .ticker-line > div {
+        min-width: 0;
+      }
+
+      .sector-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        width: fit-content;
+        margin-top: 9px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 999px;
+        padding: 4px 8px;
+        color: #b9c7d7;
+        background: rgba(255, 255, 255, 0.035);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .rail-actions {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+        display: grid;
+        gap: 8px;
+      }
+
+      .primary-button,
+      .secondary-button {
+        min-height: 42px;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-weight: 850;
+      }
+
+      .primary-button {
+        border: 1px solid rgba(62, 230, 174, 0.28);
+        background: rgba(62, 230, 174, 0.13);
+        color: var(--buy);
+      }
+
+      .secondary-button {
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.04);
+        color: #d8e2ee;
+      }
+
+      .main {
+        min-width: 0;
+        padding: 22px;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: start;
+        margin-bottom: 18px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(32px, 4.5vw, 58px);
+        line-height: 0.96;
+        letter-spacing: 0;
+      }
+
+      .subtitle {
+        margin: 12px 0 0;
+        max-width: 900px;
+        color: #b8c5d2;
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .search {
+        width: min(280px, 100%);
+        min-height: 42px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text);
+        padding: 10px 12px;
+        outline: none;
+      }
+
+      .scoreboard {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .metric,
+      .panel,
+      .card {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+      }
+
+      .metric {
+        min-height: 106px;
+        border-radius: 8px;
+        padding: 14px;
+      }
+
+      .metric-value {
+        margin-top: 8px;
+        font-size: 30px;
+        font-weight: 900;
+        line-height: 1;
+      }
+
+      .metric-note {
+        margin-top: 8px;
+        color: #aab8c7;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .action-grid {
+        display: grid;
+        grid-template-columns: 1.15fr 0.95fr 0.9fr;
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+
+      .panel {
+        border-radius: 8px;
+        padding: 16px;
+        min-width: 0;
+      }
+
+      .panel-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .panel-title {
+        font-size: 20px;
+        font-weight: 900;
+      }
+
+      .action-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .action-row {
+        display: grid;
+        grid-template-columns: minmax(132px, 0.82fr) minmax(180px, 1.3fr) auto;
+        gap: 12px;
+        align-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 8px;
+        padding: 11px;
+        background: rgba(255, 255, 255, 0.027);
+      }
+
+      .action-row > div {
+        min-width: 0;
+      }
+
+      .ticker {
+        font-family: var(--mono);
+        font-size: 22px;
+        font-weight: 900;
+        max-width: 100%;
+        min-width: 0;
         overflow: hidden;
-        color: var(--muted);
-        font-size: 11px;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      .thesis {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        margin-top: 14px;
-      }
-      .thesis article {
-        padding: 14px;
-        border: 1px solid var(--soft);
-        border-radius: 7px;
-        background: rgba(255, 255, 255, 0.025);
-      }
-      .thesis h3 { margin-bottom: 10px; font-size: 14px; }
-      .thesis ul {
-        display: grid;
-        gap: 8px;
-        margin: 0;
-        padding-left: 18px;
-        color: #c5d0dc;
-        font-size: 13px;
+
+      .action-row .ticker {
+        font-size: clamp(16px, 1.45vw, 21px);
+        letter-spacing: -0.02em;
       }
 
-      .side { display: grid; gap: 12px; }
-      .alerts { display: grid; gap: 7px; }
-      .alerts article {
-        justify-content: space-between;
-        gap: 9px;
-        padding: 10px;
-        border: 1px solid var(--soft);
-        border-radius: 7px;
-        background: rgba(255, 255, 255, 0.025);
-      }
-      .alerts strong { min-width: 48px; }
-      .alerts span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .alerts em { font-style: normal; font-weight: 900; }
-      .heat { display: grid; gap: 8px; }
-      .heat button {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 7px 10px;
-        width: 100%;
-        padding: 10px;
-        color: var(--text);
-        text-align: left;
-        border: 1px solid var(--soft);
-        border-radius: 7px;
-        background: transparent;
-      }
-      .heat button.active, .heat button:hover {
-        border-color: rgba(49, 209, 143, 0.42);
-        background: rgba(49, 209, 143, 0.06);
-      }
-      .heat i {
-        grid-column: 1 / -1;
-        height: 5px;
+      .name {
+        color: #c4cfda;
+        font-size: 13px;
+        line-height: 1.45;
+        white-space: nowrap;
         overflow: hidden;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.08);
+        text-overflow: ellipsis;
       }
-      .heat i span {
-        display: block;
-        height: 100%;
-        border-radius: inherit;
-        background: linear-gradient(90deg, var(--cyan), var(--green));
+
+      .row-thesis {
+        color: #aebccd;
+        font-size: 13px;
+        line-height: 1.45;
+        margin-top: 3px;
+      }
+
+      .row-reason {
+        color: #d5dee8;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.45;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        min-height: 28px;
+        border-radius: 999px;
+        padding: 5px 9px;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .badge.buy {
+        color: var(--buy);
+        background: rgba(62, 230, 174, 0.12);
+        border: 1px solid rgba(62, 230, 174, 0.24);
+      }
+
+      .badge.wait {
+        color: var(--wait);
+        background: rgba(255, 209, 102, 0.12);
+        border: 1px solid rgba(255, 209, 102, 0.25);
+      }
+
+      .badge.risk {
+        color: var(--risk);
+        background: rgba(255, 123, 123, 0.12);
+        border: 1px solid rgba(255, 123, 123, 0.25);
       }
 
       .cards {
         display: grid;
-        grid-template-columns: 1.6fr 1fr 1fr;
-        gap: 12px;
-        margin-top: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+        gap: 14px;
       }
-      .card { padding: 18px; }
-      .card span {
-        color: var(--cyan);
-        font-weight: 800;
+
+      .card {
+        border-radius: 8px;
+        padding: 16px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: linear-gradient(180deg, rgba(96, 165, 250, 0.05), transparent 34%);
+      }
+
+      .card-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        position: relative;
+      }
+
+      .price {
+        font-family: var(--mono);
+        text-align: right;
+        font-size: 23px;
+        font-weight: 900;
+      }
+
+      .change {
+        margin-top: 4px;
+        text-align: right;
+        font-size: 14px;
+        font-weight: 900;
+      }
+
+      .thesis {
+        margin-top: 12px;
+        color: #d9e2ec;
+        font-size: 14px;
+        line-height: 1.6;
+        position: relative;
+      }
+
+      .signal-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin: 14px 0;
+        position: relative;
+      }
+
+      .signal {
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 8px;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.028);
+      }
+
+      .signal-label {
+        color: #8fa0b2;
+        font-size: 10px;
+        font-weight: 900;
         letter-spacing: 0.08em;
         text-transform: uppercase;
       }
-      .card h2, .card h3 { margin: 10px 0; }
-      .card h2 { font-size: 28px; }
-      .card p { color: #b8c5d4; line-height: 1.62; }
-      .section-title { justify-content: space-between; gap: 16px; margin: 34px 0 14px; }
-      .section-title h2 { font-size: 28px; }
-      .portfolio, .reports, .themes, .earnings {
-        display: grid;
-        gap: 12px;
-      }
-      .portfolio { grid-template-columns: repeat(3, 1fr); }
-      .reports { grid-template-columns: repeat(4, 1fr); }
-      .themes { grid-template-columns: repeat(4, 1fr); }
-      .earnings { grid-template-columns: repeat(4, 1fr); }
-      .meter {
-        height: 6px;
-        overflow: hidden;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.08);
-      }
-      .meter span { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--green)); }
-      footer {
-        justify-content: space-between;
-        gap: 16px;
-        padding: 24px 0 42px;
-        border-top: 1px solid var(--line);
+
+      .signal-value {
+        margin-top: 5px;
+        font-family: var(--mono);
+        font-size: 16px;
+        font-weight: 900;
       }
 
-      @media (max-width: 1180px) {
-        .grid { grid-template-columns: 1fr; }
-        .rail { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; }
-        .rail .panel-title { min-width: 112px; margin: 0; }
-        .theme-btn { flex: 0 0 190px; min-height: 72px; margin: 0; }
-        .side, .cards, .portfolio, .reports, .themes { grid-template-columns: repeat(2, 1fr); }
+      .rules {
+        display: grid;
+        gap: 7px;
+        margin-top: 12px;
+        position: relative;
       }
+
+      .rule {
+        color: #bac7d5;
+        font-size: 13px;
+        line-height: 1.45;
+        padding-left: 13px;
+        position: relative;
+      }
+
+      .rule::before {
+        content: "";
+        width: 5px;
+        height: 5px;
+        border-radius: 999px;
+        background: var(--blue);
+        position: absolute;
+        left: 0;
+        top: 7px;
+      }
+
+      .card-actions {
+        margin-top: 14px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        position: relative;
+      }
+
+      .link-button {
+        min-height: 36px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.04);
+        color: #dce7f3;
+        padding: 8px 10px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .empty {
+        color: var(--muted);
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        padding: 18px;
+      }
+
+      .heat {
+        height: 8px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.07);
+        margin-top: 10px;
+      }
+
+      .heat-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--info), var(--buy));
+      }
+
+      .source-note {
+        margin-top: 18px;
+        color: #8c9cae;
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      @media (max-width: 1100px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+
+        .rail {
+          position: relative;
+          height: auto;
+          display: block;
+        }
+
+        .nav {
+          grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+        }
+
+        .action-grid,
+        .topbar {
+          grid-template-columns: 1fr;
+        }
+
+        .toolbar {
+          justify-content: flex-start;
+        }
+      }
+
       @media (max-width: 760px) {
-        header { position: relative; }
-        .top, .title-row, .metrics, .thesis, .side, .cards, .portfolio,
-        .reports, .themes, .earnings, footer { display: grid; grid-template-columns: 1fr; }
-        nav, .strip { justify-content: flex-start; overflow-x: auto; }
-        .meta { text-align: left; }
-        .focus-top { grid-template-columns: minmax(0, 1fr) 88px; }
-        .score { padding: 10px; }
-        .score strong { font-size: 30px; }
-        .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        .metrics strong { font-size: 13px; }
+        .main,
+        .rail {
+          padding: 14px;
+        }
+
+        .scoreboard {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .cards {
+          grid-template-columns: 1fr;
+        }
+
+        .action-row {
+          grid-template-columns: minmax(0, 1fr);
+          align-items: start;
+        }
+
+        .action-row .badge {
+          grid-column: 1 / -1;
+          width: fit-content;
+        }
       }
     </style>
   </head>
   <body>
-    <header>
-      <div class="top">
-        <a class="brand" href="#dashboard">
-          <span class="mark">D</span>
-          <span><strong>Daniel Alpha Radar</strong><small>AI infra market terminal</small></span>
-        </a>
-        <nav>
-          <a href="#dashboard">Dashboard</a>
-          <a href="#nvidia">NVIDIA</a>
-          <a href="#reports">Reports</a>
-          <a href="#ideas">Ideas</a>
-          <a href="#earnings">Earnings</a>
-        </nav>
-        <div class="sync"><i></i><span id="freshness">Local data</span></div>
-      </div>
-      <section class="strip" aria-label="Market snapshot">
-        <article><span>KOSPI</span><strong>3,142.27</strong><em class="up">+0.82%</em></article>
-        <article><span>S&amp;P 500</span><strong>6,084.31</strong><em class="up">+1.14%</em></article>
-        <article><span>NASDAQ</span><strong>20,814.55</strong><em class="up">+1.61%</em></article>
-        <article><span>USD/KRW</span><strong>1,386.40</strong><em class="down">-0.28%</em></article>
-        <article><span>WTI</span><strong>78.20</strong><em class="down">-2.16%</em></article>
-        <article><span>BTC</span><strong>$92,440</strong><em class="up">+0.44%</em></article>
-      </section>
-    </header>
+    <div class="app">
+      <aside class="rail">
+        <div class="brand">
+          <div class="brand-kicker">Current Action UI</div>
+          <div class="brand-title">AI Action Desk</div>
+        </div>
+        <div class="status" id="status">실시간 데이터를 불러올 준비 중입니다.</div>
+        <nav class="nav" id="nav"></nav>
+        <div class="rail-actions">
+          <button class="primary-button" id="refreshBtn">현재 기준 새로고침</button>
+          <button class="secondary-button" id="resetBtn">필터 초기화</button>
+        </div>
+      </aside>
 
-    <main id="dashboard">
-      <section>
-        <div class="title-row">
+      <main class="main">
+        <section class="topbar">
           <div>
-            <p class="eyebrow">Personal Command Center</p>
-            <h1>AI 인프라 레이더</h1>
+            <h1 id="pageTitle">오늘 액션부터 본다</h1>
+            <p class="subtitle" id="subtitle">
+              가격 예측보다 실행 기준을 먼저 보여줍니다. 종목은 지금 살 후보, 기다릴 후보, 줄일 후보로 자동 분류됩니다.
+            </p>
           </div>
-          <div class="meta"><span>2026.05.02</span><strong>112 names · 11 themes · HTML standalone</strong></div>
+          <div class="toolbar">
+            <input class="search" id="search" placeholder="티커 / 회사명 검색" />
+            <button class="secondary-button" data-sort="score">액션점수</button>
+            <button class="secondary-button" data-sort="momentum">상승강도</button>
+            <button class="secondary-button" data-sort="pullback">눌림목</button>
+          </div>
+        </section>
+
+        <section class="scoreboard" id="scoreboard"></section>
+        <section class="action-grid" id="actionGrid"></section>
+        <section class="cards" id="cards"></section>
+        <div class="source-note">
+          데이터는 브라우저에서 Yahoo Finance chart endpoint를 호출해 계산합니다. 네트워크 또는 CORS 제한 시 마지막 로컬 룰 기반으로 표시됩니다. 투자 조언이 아니라 실행 후보 정리 UI입니다.
         </div>
-
-        <div class="grid">
-          <aside class="rail" id="themeRail"></aside>
-
-          <section class="focus" aria-live="polite">
-            <div class="focus-top">
-              <div>
-                <p class="eyebrow" id="themeCategory"></p>
-                <h2 id="themeTitle"></h2>
-                <p id="themeThesis"></p>
-              </div>
-              <div class="score"><span>Signal</span><strong id="themeScore"></strong></div>
-            </div>
-            <div class="metrics">
-              <article><span>Conviction</span><strong id="themeConviction"></strong></article>
-              <article><span>Horizon</span><strong id="themeHorizon"></strong></article>
-              <article><span>Risk</span><strong id="themeRisk"></strong></article>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>Symbol</th><th>Last</th><th>Day</th><th>Week</th><th>YTD</th></tr></thead>
-                <tbody id="quoteRows"></tbody>
-              </table>
-            </div>
-            <div class="thesis">
-              <article><h3>핵심 촉매</h3><ul id="catalysts"></ul></article>
-              <article><h3>체크할 리스크</h3><ul id="risks"></ul></article>
-            </div>
-          </section>
-
-          <aside class="side">
-            <section>
-              <div class="panel-title"><span>Auto Alerts</span><b id="alertCount"></b></div>
-              <div class="alerts" id="alerts"></div>
-            </section>
-            <section>
-              <div class="panel-title"><span>Theme Heat</span><b>Top 6</b></div>
-              <div class="heat" id="heat"></div>
-            </section>
-          </aside>
-        </div>
-      </section>
-
-      <section class="cards">
-        <article class="card">
-          <span>Daily Anchor</span>
-          <h2>AI FOMO가 금리 공포보다 강한 이유</h2>
-          <p>시장 수급은 다시 AI 인프라와 엔비디아 밸류체인으로 회귀하고 있습니다. 오늘은 병목 기업의 주문잔고와 가격 모멘텀을 먼저 봅니다.</p>
-        </article>
-        <article class="card">
-          <span>Watch</span>
-          <h3>전력 · 냉각 · 광통신 병목</h3>
-          <p>GPU 다음 병목이 어디인지 보는 것이 알파의 중심입니다.</p>
-        </article>
-        <article class="card">
-          <span>Breadth</span>
-          <h3>지수 강세 vs 시장 폭 축소</h3>
-          <p>대형 AI 인프라 주도는 유지되지만 중소형 확산 여부는 아직 확인 구간입니다.</p>
-        </article>
-      </section>
-
-      <section id="nvidia">
-        <div class="section-title"><div><p class="eyebrow">NVIDIA Portfolio Map</p><h2>엔비디아 전략 투자 지도</h2></div><span class="meta">10 sectors · strategic map</span></div>
-        <div class="portfolio">
-          <article class="card"><span>AI Model</span><h3>$121B+</h3><p>OpenAI, Anthropic, xAI, Mistral, Cohere</p></article>
-          <article class="card"><span>Neocloud</span><h3>$9B+</h3><p>GPU 전용 클라우드 수요 레이어. CRWV · NBIS · ORCL</p></article>
-          <article class="card"><span>Optical</span><h3>$4B+</h3><p>800G, 1.6T, CPO 전환. COHR · LITE · CIEN</p></article>
-          <article class="card"><span>Energy</span><h3>$1B+</h3><p>전력 확보가 GPU 수요의 전제조건. CEG · VST · OKLO</p></article>
-          <article class="card"><span>Robotics</span><h3>$3B+</h3><p>Physical AI 수요 확장. NVDA · TSLA · ISRG</p></article>
-          <article class="card"><span>Data Infra</span><h3>$2B+</h3><p>데이터, 라벨링, 모델 배포 해자. PLTR · SNOW · MDB</p></article>
-        </div>
-      </section>
-
-      <section id="reports">
-        <div class="section-title"><div><p class="eyebrow">Latest Intelligence</p><h2>리서치 노트</h2></div></div>
-        <div class="reports">
-          <article class="card"><span>Macro Strategy</span><h3>금리 공포보다 강한 실적 모멘텀</h3><p>리스크 프리미엄, 이익 수정비율, 시장 폭 체크리스트.</p></article>
-          <article class="card"><span>Thematic Deep Dive</span><h3>액체 냉각: 랙 밀도 상승의 필수재</h3><p>서버 열설계전력 상승이 냉각 업체의 단가와 마진에 미치는 영향.</p></article>
-          <article class="card"><span>Stock Analysis</span><h3>전력 장비 기업의 주문잔고 해부</h3><p>수주, 매출 전환, 가격 인상 지속성을 중심으로 본 밸류에이션.</p></article>
-          <article class="card"><span>Crypto Watch</span><h3>스테이블코인 유동성과 위험선호</h3><p>온체인 유동성 지표가 성장주 수급에 주는 힌트.</p></article>
-        </div>
-      </section>
-
-      <section id="ideas">
-        <div class="section-title"><div><p class="eyebrow">Major Themes</p><h2>핵심 테마</h2></div></div>
-        <div class="themes" id="themeMeters"></div>
-      </section>
-
-      <section id="earnings">
-        <div class="section-title"><div><p class="eyebrow">Earnings Preview</p><h2>실적 캘린더</h2></div></div>
-        <div class="earnings">
-          <article class="card"><span>Apr 29</span><h3>MSFT</h3><p>Pending</p></article>
-          <article class="card"><span>Apr 30</span><h3>AMZN</h3><p>Pending</p></article>
-          <article class="card"><span>May 01</span><h3>NVDA</h3><p>Watch</p></article>
-          <article class="card"><span>May 02</span><h3>LLY</h3><p>Pending</p></article>
-        </div>
-      </section>
-    </main>
-
-    <footer>
-      <strong>Daniel Alpha Radar</strong>
-      <span>Standalone HTML. Local market data is best-effort and may be delayed.</span>
-    </footer>
+      </main>
+    </div>
 
     <script>
-      const names = {
-        NVDA: "NVIDIA", AVGO: "Broadcom", AMD: "AMD", TSM: "TSMC", ARM: "Arm", MU: "Micron",
-        VRT: "Vertiv", GEV: "GE Vernova", CEG: "Constellation Energy", COHR: "Coherent",
-        LITE: "Lumentum", CRWV: "CoreWeave", NBIS: "Nebius", OKLO: "Oklo", CCJ: "Cameco",
-        LEU: "Centrus Energy", FCX: "Freeport-McMoRan", SCCO: "Southern Copper",
-        PLTR: "Palantir", ORCL: "Oracle", GOOG: "Alphabet"
-      };
-      const quotes = {
-        NVDA:{price:198.96,day:-0.31,week:-4.47,ytd:6.68,asOf:"2026-05-01T13:30:00.000Z"},
-        AVGO:{price:421.48,day:0.97,week:-0.3,ytd:21.78,asOf:"2026-05-01T13:30:00.000Z"},
-        VRT:{price:328.5,day:0,week:1.56,ytd:102.77,asOf:"2026-05-01T13:30:00.000Z"},
-        GEV:{price:1072.33,day:-1.03,week:-6.69,ytd:64.07,asOf:"2026-05-01T13:30:00.000Z"},
-        CEG:{price:316.75,day:1.2,week:1.03,ytd:-10.34,asOf:"2026-05-01T13:30:00.000Z"},
-        COHR:{price:333.08,day:4.18,week:-0.89,ytd:80.47,asOf:"2026-05-01T13:30:00.000Z"},
-        LITE:{price:972.91,day:7.82,week:10.35,ytd:163.95,asOf:"2026-05-01T13:30:00.000Z"},
-        NBIS:{price:153.59,day:11.11,week:4.37,ytd:83.49,asOf:"2026-05-01T13:30:00.000Z"},
-        OKLO:{price:70.74,day:-2.43,week:-0.37,ytd:-1.42,asOf:"2026-05-01T13:30:00.000Z"},
-        CCJ:{price:119.32,day:-3.02,week:-2.32,ytd:30.42,asOf:"2026-05-01T13:30:00.000Z"},
-        LEU:{price:205.74,day:-2.47,week:0.05,ytd:-15.25,asOf:"2026-05-01T13:30:00.000Z"},
-        FCX:{price:57.23,day:-0.96,week:-6.27,ytd:12.67,asOf:"2026-05-01T13:30:00.000Z"},
-        SCCO:{price:169.91,day:-1.04,week:-5.83,ytd:19.38,asOf:"2026-05-01T13:30:00.000Z"},
-        ORCL:{price:171.84,day:6.47,week:-0.83,ytd:-11.84,asOf:"2026-05-01T13:30:00.000Z"}
-      };
-      const themes = [
-        {id:"ai",title:"AI 반도체",cat:"Core Theme",score:96,conviction:"Very High",horizon:"6-18M",risk:"Medium",tickers:["NVDA","AVGO","AMD","TSM","ARM","MU"],thesis:"GPU, ASIC, HBM, 파운드리가 AI 인프라 CAPEX의 가장 앞단에서 실적 가시성을 만들고 있습니다.",catalysts:["AI 서버 출하량 상향","HBM 공급 부족 지속","클라우드 CAPEX 가이던스 상향"],risks:["대형 고객 주문 공백","밸류에이션 부담","수출 규제와 공급망 변수"]},
-        {id:"power",title:"데이터센터 전력",cat:"Infrastructure Theme",score:93,conviction:"Very High",horizon:"12-36M",risk:"Medium",tickers:["VRT","GEV","CEG","OKLO","LEU","CCJ"],thesis:"AI 데이터센터의 진짜 병목은 전력, 냉각, 변압기, 시공 능력으로 이동하고 있습니다.",catalysts:["전력 장비 수주잔고","액체 냉각 도입","하이퍼스케일러 전력 계약"],risks:["규제 허가","원자재 비용","데이터센터 착공 지연"]},
-        {id:"optical",title:"광통신/네트워크",cat:"Bottleneck Theme",score:90,conviction:"High",horizon:"6-18M",risk:"Medium High",tickers:["COHR","LITE","AVGO","NVDA","ORCL","NBIS"],thesis:"800G와 1.6T 전환은 GPU 클러스터 확장의 네트워크 병목을 푸는 핵심 축입니다.",catalysts:["800G 트랜시버 주문","CPO/SiPho 전환","AI 백엔드 네트워크 증설"],risks:["고객 집중도","가격 하락","공급 과잉"]},
-        {id:"nuclear",title:"원전/우라늄",cat:"Energy Theme",score:88,conviction:"High",horizon:"18-48M",risk:"High",tickers:["CEG","CCJ","OKLO","LEU","VRT","GEV"],thesis:"AI 전력 수요는 무탄소 기저전원, 우라늄, SMR에 구조적 프리미엄을 만들 수 있습니다.",catalysts:["장기 전력 구매 계약","우라늄 공급 부족","SMR 정책 지원"],risks:["허가 지연","정책 변경","고변동 스토리 주식"]},
-        {id:"metals",title:"구리/희소금속",cat:"Materials Theme",score:84,conviction:"Medium High",horizon:"12-36M",risk:"Medium High",tickers:["FCX","SCCO","CEG","GEV","VRT","LEU"],thesis:"전력망, 냉각, 배터리, 방산 공급망은 구리와 전략광물 수요를 동시에 자극합니다.",catalysts:["구리 재고 감소","미국 전략광물 정책","전력망 투자 확대"],risks:["중국 수요 둔화","상품 가격 변동","프로젝트 개발 지연"]},
-        {id:"software",title:"AI 소프트웨어",cat:"Enterprise Theme",score:86,conviction:"High",horizon:"9-24M",risk:"Medium High",tickers:["ORCL","PLTR","GOOG","NVDA","AVGO","NBIS"],thesis:"AI 인프라 투자가 엔터프라이즈 앱, 데이터 플랫폼, 추론 워크플로 매출로 번지는 단계입니다.",catalysts:["AI 기능 유료화","데이터 플랫폼 사용량 증가","정부/기업 자동화 예산"],risks:["ROI 검증 지연","모델 가격 하락","경쟁 심화"]}
+      const sectors = [
+        { id: "all", label: "전체", color: "#8bbdff" },
+        { id: "requested-us", label: "미국/해외 전체", color: "#f97316" },
+        { id: "requested-kr", label: "한국 전체", color: "#22c55e" },
+        { id: "ai-infra", label: "AI Infra", color: "#fb923c" },
+        { id: "power", label: "Power", color: "#ffd166" },
+        { id: "nuclear", label: "Nuclear", color: "#3ee6ae" },
+        { id: "semis-us", label: "US Semis", color: "#f472b6" },
+        { id: "semis-kr", label: "Korea Semis", color: "#38bdf8" },
+        { id: "photonics", label: "Photonics", color: "#a78bfa" },
+        { id: "materials", label: "Materials", color: "#22d3ee" },
       ];
-      let active = themes[0];
-      const fmt = v => Number.isFinite(v) ? new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:v >= 100 ? 0 : 2}).format(v) : "수동";
-      const pct = v => Number.isFinite(v) ? `${v >= 0 ? "+" : ""}${v}%` : "-";
-      const tone = v => Number.isFinite(v) ? (v >= 0 ? "up" : "down") : "";
-      const html = (id, value) => document.getElementById(id).innerHTML = value;
-      function render() {
-        html("themeRail", `<div class="panel-title"><span>Theme Stack</span><b>${themes.length}</b></div>` + themes.map(t => `
-          <button class="theme-btn ${t.id === active.id ? "active" : ""}" data-id="${t.id}">
-            <span>${t.title}<em>${t.cat}</em></span><strong>${t.score}</strong>
-          </button>`).join(""));
-        document.querySelectorAll(".theme-btn").forEach(btn => btn.onclick = () => {
-          active = themes.find(t => t.id === btn.dataset.id);
-          render();
-        });
-        html("themeCategory", active.cat);
-        html("themeTitle", active.title);
-        html("themeThesis", active.thesis);
-        html("themeScore", active.score);
-        html("themeConviction", active.conviction);
-        html("themeHorizon", active.horizon);
-        html("themeRisk", active.risk);
-        html("quoteRows", active.tickers.map(t => {
-          const q = quotes[t] || {};
-          return `<tr><td><strong>${t}</strong><span>${names[t] || t}</span></td><td>${fmt(q.price)}</td><td class="${tone(q.day)}">${pct(q.day)}</td><td class="${tone(q.week)}">${pct(q.week)}</td><td class="${tone(q.ytd)}">${pct(q.ytd)}</td></tr>`;
-        }).join(""));
-        html("catalysts", active.catalysts.map(x => `<li>${x}</li>`).join(""));
-        html("risks", active.risks.map(x => `<li>${x}</li>`).join(""));
-        const alertItems = Object.entries(quotes).filter(([,q]) => Math.abs(q.day) >= 5).sort((a,b) => Math.abs(b[1].day) - Math.abs(a[1].day)).slice(0,5);
-        html("alertCount", alertItems.length);
-        html("alerts", alertItems.map(([t,q]) => `<article><strong>${t}</strong><span>${names[t] || t}</span><em class="${tone(q.day)}">${pct(q.day)}</em></article>`).join("") || `<article><strong>Quiet</strong><span>일간 ±5% 이상 움직임 없음</span><em>-</em></article>`);
-        html("heat", [...themes].sort((a,b) => b.score - a.score).slice(0,6).map(t => `<button class="${t.id === active.id ? "active" : ""}" data-id="${t.id}"><span>${t.title}</span><strong>${t.score}</strong><i><span style="width:${t.score}%"></span></i></button>`).join(""));
-        document.querySelectorAll(".heat button").forEach(btn => btn.onclick = () => {
-          active = themes.find(t => t.id === btn.dataset.id);
-          render();
-        });
-        html("themeMeters", themes.map(t => `<article class="card"><span>${t.title}</span><h3>${t.score}%</h3><div class="meter"><span style="width:${t.score}%"></span></div></article>`).join(""));
-        const latest = Object.values(quotes).map(q => new Date(q.asOf).getTime()).sort((a,b)=>b-a)[0];
-        document.getElementById("freshness").textContent = new Intl.DateTimeFormat("ko-KR",{dateStyle:"medium",timeStyle:"short"}).format(latest);
+
+      const watchlist = [
+        {
+          ticker: "NVDA",
+          name: "NVIDIA",
+          sector: "ai-infra",
+          thesis: "AI GPU와 네트워킹 수요의 기준점. 추격보다 20일선 부근 눌림 확인이 중요.",
+          buyRule: "상승 추세 유지 + 20일선 회복 또는 거래량 동반 신고가",
+          waitRule: "5일 급등 뒤 20일선과 괴리가 크면 기다림",
+          riskRule: "50일선 이탈 후 반등 실패",
+        },
+        {
+          ticker: "AVGO",
+          name: "Broadcom",
+          sector: "ai-infra",
+          thesis: "AI ASIC, 네트워킹, VMware 현금흐름을 같이 보는 대형 핵심주.",
+          buyRule: "52주 고점 5% 이내에서 거래량 유지",
+          waitRule: "실적 전 과열이면 신규 진입 보류",
+          riskRule: "200일선 접근까지 모멘텀 둔화",
+        },
+        {
+          ticker: "VRT",
+          name: "Vertiv",
+          sector: "ai-infra",
+          thesis: "데이터센터 전력·냉각 설비의 직접 수혜주. 변동성은 높음.",
+          buyRule: "50일선 위에서 재가속",
+          waitRule: "RSI 과열 또는 52주 고점 이격 확대",
+          riskRule: "고점 대비 급락 + 50일선 아래 체류",
+        },
+        {
+          ticker: "ORCL",
+          name: "Oracle",
+          sector: "ai-infra",
+          thesis: "AI 클라우드 수주와 데이터센터 CAPEX를 같이 봐야 하는 이름.",
+          buyRule: "20일·50일선 회복 후 3일 이상 유지",
+          waitRule: "수주 뉴스만 있고 가격 확인이 없으면 관찰",
+          riskRule: "클라우드 성장률 둔화 또는 갭 하락",
+        },
+        {
+          ticker: "CRDO",
+          name: "Credo Technology",
+          sector: "ai-infra",
+          thesis: "AI 인터커넥트 고성장주. 좋은 종목이어도 포지션 사이징이 핵심.",
+          buyRule: "눌림 후 전고점 재돌파",
+          waitRule: "하루 8% 이상 급등 직후",
+          riskRule: "매출 기대치 훼손 시 빠르게 축소",
+        },
+        {
+          ticker: "GEV",
+          name: "GE Vernova",
+          sector: "power",
+          thesis: "전력망, 가스터빈, 데이터센터 전력 수요의 대형 수혜주.",
+          buyRule: "50일선 위에서 조정 마무리",
+          waitRule: "고점권에서 거래량 없는 상승",
+          riskRule: "전력 테마 동반 약세 전환",
+        },
+        {
+          ticker: "BE",
+          name: "Bloom Energy",
+          sector: "power",
+          thesis: "데이터센터 온사이트 전력 기대가 크지만 변동성과 밸류에이션 부담도 큼.",
+          buyRule: "급락 후 20일선 회복 + 거래량 증가",
+          waitRule: "RSI 과열 또는 단기 이격 확대",
+          riskRule: "뉴스 갭상승 후 종가 약세",
+        },
+        {
+          ticker: "CEG",
+          name: "Constellation Energy",
+          sector: "nuclear",
+          thesis: "AI 전력 수요와 원전 장기계약의 방어적 핵심주.",
+          buyRule: "50일선 위 박스권 돌파",
+          waitRule: "유틸리티 전반 금리 부담 커질 때",
+          riskRule: "전력계약 기대가 가격에 과도 반영",
+        },
+        {
+          ticker: "CCJ",
+          name: "Cameco",
+          sector: "nuclear",
+          thesis: "우라늄 연료주기 대표주. 원전 테마의 비교적 정통 노출.",
+          buyRule: "우라늄 ETF와 동반 강세",
+          waitRule: "원자재 약세와 동반 조정",
+          riskRule: "50일선 이탈 뒤 거래량 증가",
+        },
+        {
+          ticker: "LEU",
+          name: "Centrus Energy",
+          sector: "nuclear",
+          thesis: "HALEU와 농축 테마의 고베타 이름. 액션은 작게, 확인은 엄격하게.",
+          buyRule: "전고점 돌파 후 종가 유지",
+          waitRule: "뉴스성 급등 직후",
+          riskRule: "하루 변동성 확대와 20일선 이탈",
+        },
+        {
+          ticker: "OKLO",
+          name: "Oklo",
+          sector: "nuclear",
+          thesis: "차세대 원전 스토리. 실행 리스크가 커서 트레이딩 후보에 가깝다.",
+          buyRule: "거래량 동반 재돌파만 소액",
+          waitRule: "스토리만 강하고 가격 구조가 약할 때",
+          riskRule: "연속 음봉 + 20일선 아래",
+        },
+        {
+          ticker: "SMR",
+          name: "NuScale Power",
+          sector: "nuclear",
+          thesis: "SMR 대표 상징성이 있으나 프로젝트 실행 리스크가 큼.",
+          buyRule: "52주 고점 재접근 + 우라늄/원전 동반 강세",
+          waitRule: "큰 갭상승 뒤 추격 금지",
+          riskRule: "단기 지지선 붕괴",
+        },
+        {
+          ticker: "LITE",
+          name: "Lumentum",
+          sector: "photonics",
+          thesis: "AI 광통신·레이저 수요를 보는 고베타 포토닉스 이름.",
+          buyRule: "20일선 재회복 후 상대강도 유지",
+          waitRule: "과열 RSI 또는 실적 전 급등",
+          riskRule: "광학주 동반 약세",
+        },
+        {
+          ticker: "COHR",
+          name: "Coherent",
+          sector: "photonics",
+          thesis: "광학 모듈과 레이저 수혜. 사이클 회복 확인이 필요.",
+          buyRule: "50일선 지지 확인",
+          waitRule: "실적 공백기 급등",
+          riskRule: "마진 우려 재부각",
+        },
+        {
+          ticker: "MRVL",
+          name: "Marvell",
+          sector: "photonics",
+          thesis: "커스텀 실리콘과 AI 네트워킹의 중대형 핵심주.",
+          buyRule: "AI 반도체 동반 강세에서 20일선 위 유지",
+          waitRule: "NVDA/AVGO 대비 상대약세",
+          riskRule: "실적 가이던스 실망",
+        },
+        {
+          ticker: "FCX",
+          name: "Freeport-McMoRan",
+          sector: "materials",
+          thesis: "AI 전력망, 구리 수요, 원자재 사이클을 같이 보는 대형 구리주.",
+          buyRule: "구리 가격 강세 + 50일선 위",
+          waitRule: "달러 강세와 원자재 약세",
+          riskRule: "중국 수요 둔화",
+        },
+        {
+          ticker: "MP",
+          name: "MP Materials",
+          sector: "materials",
+          thesis: "미국 희토류 공급망 핵심주. 정책 모멘텀과 변동성을 같이 봐야 함.",
+          buyRule: "정책 뉴스 후 눌림 지지",
+          waitRule: "갭상승 추격 금지",
+          riskRule: "정책 모멘텀 소멸",
+        },
+        {
+          ticker: "URA",
+          name: "Global X Uranium ETF",
+          sector: "nuclear",
+          thesis: "개별 원전·우라늄주 대신 바스켓으로 방향성을 보는 도구.",
+          buyRule: "우라늄주 breadth 회복",
+          waitRule: "개별주만 급등하고 ETF가 약할 때",
+          riskRule: "ETF 50일선 이탈",
+        },
+        {
+          ticker: "AMD",
+          name: "Advanced Micro Devices",
+          sector: "semis-us",
+          thesis: "AI GPU 2위 축과 CPU, 데이터센터 회복을 같이 보는 미국 대표 반도체.",
+          buyRule: "NVDA 대비 상대강도 회복 + 20일선 위 안착",
+          waitRule: "신제품 기대만 있고 가격이 전고점 아래면 관찰",
+          riskRule: "AI GPU 수주 기대 훼손 또는 50일선 이탈",
+        },
+        {
+          ticker: "TSM",
+          name: "Taiwan Semiconductor ADR",
+          sector: "semis-us",
+          thesis: "미국 상장 ADR 기준 글로벌 파운드리 핵심. AI 칩 생산의 병목을 보는 이름.",
+          buyRule: "반도체 대형주 동반 강세 + 50일선 위 유지",
+          waitRule: "지정학 리스크 뉴스 직후 추격 금지",
+          riskRule: "ADR 갭하락과 SOXX 동반 약세",
+        },
+        {
+          ticker: "ASML",
+          name: "ASML Holding ADR",
+          sector: "semis-us",
+          thesis: "EUV 노광 장비 독점급 포지션. 장비 사이클을 보는 대표 고품질주.",
+          buyRule: "장비주 breadth 회복 + 20일선 재돌파",
+          waitRule: "수주 둔화 우려가 남아 있으면 확인",
+          riskRule: "가이던스 하향 또는 중국 규제 확대",
+        },
+        {
+          ticker: "AMAT",
+          name: "Applied Materials",
+          sector: "semis-us",
+          thesis: "반도체 전공정 장비 대표주. 메모리와 파운드리 CAPEX를 같이 봅니다.",
+          buyRule: "장비주 리더십 회복 + 거래량 동반 상승",
+          waitRule: "CAPEX 사이클 확인 전 급등",
+          riskRule: "장비주 전반 상대약세",
+        },
+        {
+          ticker: "LRCX",
+          name: "Lam Research",
+          sector: "semis-us",
+          thesis: "식각 장비 핵심주. 메모리 회복과 AI 서버 메모리 투자를 같이 봅니다.",
+          buyRule: "메모리주와 동반 상승",
+          waitRule: "실적 전 이격 확대",
+          riskRule: "메모리 가격 모멘텀 둔화",
+        },
+        {
+          ticker: "KLAC",
+          name: "KLA",
+          sector: "semis-us",
+          thesis: "계측·검사 장비 대표 고품질주. 선단공정 복잡도 증가 수혜.",
+          buyRule: "52주 고점권에서 낮은 변동성 유지",
+          waitRule: "장비주 순환이 약하면 관찰",
+          riskRule: "전공정 장비주 동반 이탈",
+        },
+        {
+          ticker: "MU",
+          name: "Micron Technology",
+          sector: "semis-us",
+          thesis: "HBM과 메모리 사이클 대표 미국주. 변동성이 크지만 AI 메모리 민감도가 높음.",
+          buyRule: "DRAM/HBM 가격 모멘텀 + 20일선 위",
+          waitRule: "메모리 가격 기대가 이미 과열일 때",
+          riskRule: "가이던스 피크아웃 우려",
+        },
+        {
+          ticker: "QCOM",
+          name: "Qualcomm",
+          sector: "semis-us",
+          thesis: "모바일 AP, 온디바이스 AI, 자동차 칩을 같이 보는 대형 팹리스.",
+          buyRule: "모바일/온디바이스 AI 테마 동반 강세",
+          waitRule: "핸드셋 수요 확인 전 급등",
+          riskRule: "중국 스마트폰 수요 둔화",
+        },
+        {
+          ticker: "ARM",
+          name: "Arm Holdings",
+          sector: "semis-us",
+          thesis: "CPU IP와 AI 엣지 생태계의 대표 성장주. 밸류에이션 리스크가 큼.",
+          buyRule: "강한 장에서만 소액 분할",
+          waitRule: "과열 구간에서는 눌림목 대기",
+          riskRule: "고밸류 성장주 동반 약세",
+        },
+        {
+          ticker: "005930.KS",
+          name: "Samsung Electronics",
+          sector: "semis-kr",
+          thesis: "한국 반도체 대표주. HBM 회복, 메모리 사이클, 파운드리 기대를 같이 봅니다.",
+          buyRule: "SK하이닉스와 동반 강세 + 외국인 순매수",
+          waitRule: "HBM 경쟁력 확인 전 단기 급등",
+          riskRule: "메모리 가격 약세 또는 외국인 매도 지속",
+        },
+        {
+          ticker: "000660.KS",
+          name: "SK Hynix",
+          sector: "semis-kr",
+          thesis: "HBM 주도권을 보는 한국 핵심 반도체. AI 메모리 민감도가 가장 큼.",
+          buyRule: "HBM 수요 뉴스 + 20일선 위 유지",
+          waitRule: "신고가권 단기 이격이 크면 대기",
+          riskRule: "HBM 마진 우려 또는 대형 음봉",
+        },
+        {
+          ticker: "042700.KS",
+          name: "Hanmi Semiconductor",
+          sector: "semis-kr",
+          thesis: "HBM 본딩 장비 대표주. 한국 AI 반도체 장비의 고베타 핵심.",
+          buyRule: "HBM 장비주 동반 강세 + 거래량 증가",
+          waitRule: "급등 후 20일선과 괴리 확대",
+          riskRule: "수주 모멘텀 둔화 또는 장비주 동반 이탈",
+        },
+        {
+          ticker: "000990.KS",
+          name: "DB HiTek",
+          sector: "semis-kr",
+          thesis: "전력반도체와 파운드리 사이클을 보는 한국 대표 중형주.",
+          buyRule: "파운드리 회복 신호 + 50일선 회복",
+          waitRule: "실적 확인 전 박스권이면 관찰",
+          riskRule: "레거시 파운드리 수요 둔화",
+        },
+        {
+          ticker: "403870.KQ",
+          name: "HPSP",
+          sector: "semis-kr",
+          thesis: "고압 수소 어닐링 장비 대표주. 선단공정 장비 테마로 봅니다.",
+          buyRule: "장비주 리더십 회복 + 전고점 재도전",
+          waitRule: "밸류에이션 부담 구간",
+          riskRule: "장비주 수급 이탈",
+        },
+        {
+          ticker: "095340.KQ",
+          name: "ISC",
+          sector: "semis-kr",
+          thesis: "테스트 소켓 대표주. AI 반도체 테스트 수요를 보는 이름.",
+          buyRule: "테스트 부품주 동반 강세",
+          waitRule: "실적 모멘텀 확인 전 급등",
+          riskRule: "고객사 투자 둔화",
+        },
+        {
+          ticker: "240810.KQ",
+          name: "Wonik IPS",
+          sector: "semis-kr",
+          thesis: "한국 전공정 장비 대표주. 삼성 CAPEX와 메모리 회복에 민감.",
+          buyRule: "삼성전자 CAPEX 기대 + 장비주 breadth 회복",
+          waitRule: "수주 확인 전 박스권",
+          riskRule: "CAPEX 지연 뉴스",
+        },
+        {
+          ticker: "036930.KQ",
+          name: "Jusung Engineering",
+          sector: "semis-kr",
+          thesis: "증착 장비와 태양광 장비를 같이 보는 한국 장비주.",
+          buyRule: "반도체 장비 순환매 진입",
+          waitRule: "테마만 강하고 실적 확인이 없을 때",
+          riskRule: "장비주 동반 약세",
+        },
+        {
+          ticker: "058470.KQ",
+          name: "Leeno Industrial",
+          sector: "semis-kr",
+          thesis: "테스트 핀·소켓 고품질주. 방어적 퀄리티와 반도체 테스트 회복을 같이 봅니다.",
+          buyRule: "낮은 변동성으로 50일선 위 유지",
+          waitRule: "거래량 없는 신고가 추격 금지",
+          riskRule: "테스트 부품 수요 둔화",
+        },
+      ];
+
+      const qualityByTicker = {
+        NVDA: 18,
+        AVGO: 20,
+        VRT: 18,
+        ORCL: 14,
+        CRDO: 12,
+        GEV: 20,
+        BE: 12,
+        CEG: 18,
+        CCJ: 16,
+        LEU: 10,
+        OKLO: 8,
+        SMR: 7,
+        LITE: 12,
+        COHR: 11,
+        MRVL: 14,
+        FCX: 13,
+        MP: 9,
+        URA: 10,
+        AMD: 16,
+        TSM: 18,
+        ASML: 18,
+        AMAT: 16,
+        LRCX: 15,
+        KLAC: 17,
+        MU: 14,
+        QCOM: 13,
+        ARM: 11,
+        "005930.KS": 17,
+        "000660.KS": 20,
+        "042700.KS": 16,
+        "000990.KS": 11,
+        "403870.KQ": 13,
+        "095340.KQ": 12,
+        "240810.KQ": 11,
+        "036930.KQ": 10,
+        "058470.KQ": 12,
+      };
+
+      const requestedUsTickers = [
+        "NVDA", "AVGO", "INTC", "CRDO", "MRVL", "AMD", "TSM", "AMAT", "KLAC", "ARM", "ALAB", "ANET", "LRCX", "ON", "SNDK", "MU", "LITE", "COHR", "AAOI", "FN", "MTSI", "MKSI", "IPGP", "NBIS", "ORCL", "VRT", "EME", "DELL", "CEG", "CCJ", "OKLO", "LEU", "UEC", "SMR", "NNE", "DNN", "UUUU", "URA", "URNM", "GEV", "BE", "WULF", "APD", "LIN", "FCX", "SCCO", "MP", "AA", "TECK", "LAC", "BHP", "SBSW", "VAL", "XPRO", "APH", "PALL", "POET", "SOXL", "TQQQ", "VICR", "FORM", "ENTG", "QLD", "GLW", "VIAV", "AMZN", "GOOG", "PLTR", "CIEN", "TSLA", "AEHR", "GFS", "JEPQ", "VALE", "KEYS", "TSEM", "JEPI", "IONQ", "AREC", "TMC", "CIFR", "CRWV", "USAR", "CRML", "ALOY", "UMC", "NB", "PBR", "IPX", "RKLB", "DRAM", "IBIT", "GOOGL", "AMKR", "HOOD", "CRCL", "META", "LPTH", "JBL", "HIMS", "SMTC", "POWL", "VPG", "MOG.A", "MSFT", "CVX", "XLU"
+      ];
+
+      const requestedKoreaNames = [
+        "파두", "LS ELECTRIC", "일진파워", "휴림로봇", "나라스페이스테크놀로지", "현대오토에버", "현대차", "에이치브이엠", "켄코아에어로스페이스", "그린광학", "비츠로넥스텍", "두산에너빌리티", "현대건설", "두산퓨얼셀", "제이에스링크", "포스코인터내셔널", "로킷헬스케어", "우진", "한화오션", "오르비텍", "비나텍", "GRT", "우리기술"
+      ];
+
+      const companyNames = {
+        INTC: "Intel",
+        ALAB: "Astera Labs",
+        ANET: "Arista Networks",
+        ON: "ON Semiconductor",
+        SNDK: "SanDisk",
+        AAOI: "Applied Optoelectronics",
+        FN: "Fabrinet",
+        MTSI: "MACOM Technology Solutions",
+        MKSI: "MKS Instruments",
+        IPGP: "IPG Photonics",
+        NBIS: "Nebius Group",
+        EME: "EMCOR Group",
+        DELL: "Dell Technologies",
+        UEC: "Uranium Energy",
+        NNE: "Nano Nuclear Energy",
+        DNN: "Denison Mines",
+        UUUU: "Energy Fuels",
+        URNM: "Sprott Uranium Miners ETF",
+        WULF: "TeraWulf",
+        APD: "Air Products",
+        LIN: "Linde",
+        SCCO: "Southern Copper",
+        AA: "Alcoa",
+        TECK: "Teck Resources",
+        LAC: "Lithium Americas",
+        BHP: "BHP Group",
+        SBSW: "Sibanye Stillwater",
+        VAL: "Valaris",
+        XPRO: "Expro Group",
+        APH: "Amphenol",
+        PALL: "abrdn Physical Palladium ETF",
+        POET: "POET Technologies",
+        SOXL: "Direxion Daily Semiconductor Bull 3X",
+        TQQQ: "ProShares UltraPro QQQ",
+        VICR: "Vicor",
+        FORM: "FormFactor",
+        ENTG: "Entegris",
+        QLD: "ProShares Ultra QQQ",
+        GLW: "Corning",
+        VIAV: "Viavi Solutions",
+        AMZN: "Amazon",
+        GOOG: "Alphabet Class C",
+        GOOGL: "Alphabet Class A",
+        PLTR: "Palantir",
+        CIEN: "Ciena",
+        TSLA: "Tesla",
+        AEHR: "Aehr Test Systems",
+        GFS: "GlobalFoundries",
+        JEPQ: "JPMorgan Nasdaq Equity Premium Income ETF",
+        VALE: "Vale",
+        KEYS: "Keysight Technologies",
+        TSEM: "Tower Semiconductor",
+        JEPI: "JPMorgan Equity Premium Income ETF",
+        IONQ: "IonQ",
+        AREC: "American Resources",
+        TMC: "TMC the metals company",
+        CIFR: "Cipher Mining",
+        CRWV: "CoreWeave",
+        USAR: "USA Rare Earth",
+        CRML: "Critical Metals",
+        ALOY: "Alloy Enterprises",
+        UMC: "United Microelectronics",
+        NB: "NioCorp Developments",
+        PBR: "Petrobras",
+        IPX: "IperionX",
+        RKLB: "Rocket Lab",
+        DRAM: "Global X Semiconductor ETF",
+        IBIT: "iShares Bitcoin Trust",
+        AMKR: "Amkor Technology",
+        HOOD: "Robinhood",
+        CRCL: "Circle Internet Group",
+        META: "Meta Platforms",
+        LPTH: "LightPath Technologies",
+        JBL: "Jabil",
+        HIMS: "Hims & Hers Health",
+        SMTC: "Semtech",
+        POWL: "Powell Industries",
+        VPG: "Vishay Precision Group",
+        "MOG.A": "Moog Class A",
+        MSFT: "Microsoft",
+        CVX: "Chevron",
+        XLU: "Utilities Select Sector SPDR Fund",
+      };
+
+      function addGroup(item, group) {
+        item.groups = Array.from(new Set([...(item.groups || []), group]));
       }
+
+      function requestedSectorForTicker(ticker) {
+        if (["SOXL", "TQQQ", "QLD", "JEPQ", "JEPI", "IBIT", "XLU"].includes(ticker)) return "requested-us";
+        if (["CEG", "CCJ", "OKLO", "LEU", "UEC", "SMR", "NNE", "DNN", "UUUU", "URA", "URNM"].includes(ticker)) return "nuclear";
+        if (["GEV", "BE", "WULF", "APD", "LIN", "VICR", "POWL"].includes(ticker)) return "power";
+        if (["FCX", "SCCO", "MP", "AA", "TECK", "LAC", "BHP", "SBSW", "VAL", "XPRO", "PALL", "VALE", "AREC", "TMC", "USAR", "CRML", "ALOY", "NB", "PBR", "IPX", "CVX"].includes(ticker)) return "materials";
+        if (["LITE", "COHR", "AAOI", "FN", "MTSI", "MKSI", "IPGP", "POET", "GLW", "VIAV", "LPTH"].includes(ticker)) return "photonics";
+        if (["NBIS", "ORCL", "VRT", "EME", "DELL", "AMZN", "GOOG", "GOOGL", "PLTR", "CIEN", "TSLA", "IONQ", "CIFR", "CRWV", "RKLB", "HOOD", "CRCL", "META", "JBL", "HIMS", "MSFT"].includes(ticker)) return "ai-infra";
+        return "semis-us";
+      }
+
+      function makeRequestedUsItem(ticker) {
+        const sector = requestedSectorForTicker(ticker);
+        return {
+          ticker,
+          name: companyNames[ticker] || ticker,
+          sector,
+          groups: ["requested-us"],
+          thesis: "사용자 지정 미국/해외 감시 유니버스. 현재가, 당일 강도, 섹터 흐름 기준으로 액션 후보를 압축합니다.",
+          buyRule: "현재가 반영 + 당일 강도 양호 + 같은 테마 리더와 동반 상승",
+          waitRule: "시세 미반영, 급등 직후, 또는 테마 내부 상대약세면 대기",
+          riskRule: "당일 급락, 테마 동반 약세, 또는 핵심 지지 이탈",
+        };
+      }
+
+      function makeRequestedKoreaItem(name) {
+        return {
+          ticker: name,
+          name,
+          sector: "requested-kr",
+          groups: ["requested-kr"],
+          thesis: "사용자 지정 한국 감시 유니버스. 실시간 자동시세보다 수급, 뉴스, 테마 위치를 우선 확인합니다.",
+          buyRule: "테마 강도 + 거래대금 증가 + 전일 고점/단기 저항 돌파",
+          waitRule: "뉴스만 있고 가격 확인이 없거나 장중 급등 직후면 대기",
+          riskRule: "거래대금 감소, 윗꼬리, 또는 테마 동반 약세",
+        };
+      }
+
+      const existingByTicker = new Map(watchlist.map((item) => [item.ticker, item]));
+      requestedUsTickers.forEach((ticker) => {
+        const existing = existingByTicker.get(ticker);
+        if (existing) {
+          addGroup(existing, "requested-us");
+          return;
+        }
+        const item = makeRequestedUsItem(ticker);
+        watchlist.push(item);
+        existingByTicker.set(ticker, item);
+      });
+      requestedKoreaNames.forEach((name) => {
+        if (existingByTicker.has(name)) return;
+        const item = makeRequestedKoreaItem(name);
+        watchlist.push(item);
+        existingByTicker.set(name, item);
+      });
+
+      const state = {
+        sector: "all",
+        sort: "score",
+        search: "",
+        quotes: {},
+        loading: false,
+        lastUpdated: null,
+        dataError: "",
+      };
+
+      const els = {
+        nav: document.getElementById("nav"),
+        status: document.getElementById("status"),
+        refresh: document.getElementById("refreshBtn"),
+        reset: document.getElementById("resetBtn"),
+        search: document.getElementById("search"),
+        title: document.getElementById("pageTitle"),
+        subtitle: document.getElementById("subtitle"),
+        scoreboard: document.getElementById("scoreboard"),
+        actionGrid: document.getElementById("actionGrid"),
+        cards: document.getElementById("cards"),
+      };
+
+      const koreaYahooSymbols = {
+        "파두": "440110.KQ",
+        "LS ELECTRIC": "010120.KS",
+        "일진파워": "094820.KQ",
+        "휴림로봇": "090710.KQ",
+        "나라스페이스테크놀로지": "478340.KQ",
+        "현대오토에버": "307950.KS",
+        "현대차": "005380.KS",
+        "에이치브이엠": "295310.KQ",
+        "켄코아에어로스페이스": "274090.KQ",
+        "두산에너빌리티": "034020.KS",
+        "현대건설": "000720.KS",
+        "두산퓨얼셀": "336260.KS",
+        "포스코인터내셔널": "047050.KS",
+        "우진": "105840.KS",
+        "한화오션": "042660.KS",
+        "오르비텍": "046120.KQ",
+        "비나텍": "126340.KQ",
+        "제이에스링크": "127120.KQ",
+        "로킷헬스케어": "376900.KQ",
+        "GRT": "900290.KQ",
+        "우리기술": "032820.KQ"
+      };
+
+      function yahooSymbol(ticker) {
+        return koreaYahooSymbols[ticker] || ticker;
+      }
+
+      function isQuoteable(item) {
+        return item.quoteable !== false && !!yahooSymbol(item.ticker);
+      }
+
+      function proxied(url) {
+        return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+      }
+
+      async function fetchWithTimeout(url, timeoutMs = 7000) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const response = await fetch(url, { signal: controller.signal });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response;
+        } finally {
+          clearTimeout(timeout);
+        }
+      }
+
+      async function fetchJson(url) {
+        try {
+          const response = await fetchWithTimeout(url);
+          return await response.json();
+        } catch (error) {
+          const response = await fetchWithTimeout(proxied(url), 7000);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return await response.json();
+        }
+      }
+
+      async function fetchQuote(ticker) {
+        const symbol = yahooSymbol(ticker);
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1y&interval=1d`;
+        const data = await fetchJson(url);
+        const result = data && data.chart && data.chart.result && data.chart.result[0];
+        if (!result) throw new Error("No chart data");
+        const meta = result.meta || {};
+        const quote = result.indicators && result.indicators.quote && result.indicators.quote[0];
+        const closes = (quote && quote.close ? quote.close : []).map(Number).filter(Number.isFinite);
+        const highs = (quote && quote.high ? quote.high : []).map(Number).filter(Number.isFinite);
+        const volumes = (quote && quote.volume ? quote.volume : []).map(Number).filter(Number.isFinite);
+        if (!closes.length) throw new Error("No close data");
+        const price = Number(meta.regularMarketPrice || closes[closes.length - 1]);
+        const prev = closes.length > 1 ? closes[closes.length - 2] : price;
+        const first = closes[0] || price;
+        const high52 = Math.max(...highs, price);
+        const low52 = Math.min(...closes, price);
+        const ma = (days) => {
+          const slice = closes.slice(-days);
+          return slice.length ? slice.reduce((a, b) => a + b, 0) / slice.length : null;
+        };
+        const vol20 = volumes.slice(-21, -1);
+        const avgVol20 = vol20.length ? vol20.reduce((a, b) => a + b, 0) / vol20.length : null;
+        const volume = volumes[volumes.length - 1] || null;
+        const ma20 = ma(20);
+        const ma50 = ma(50);
+        const ma200 = ma(200);
+        return {
+          ticker,
+          price,
+          changePct: prev ? ((price - prev) / prev) * 100 : 0,
+          ytdPct: first ? ((price - first) / first) * 100 : 0,
+          high52,
+          low52,
+          distHighPct: high52 ? ((price - high52) / high52) * 100 : 0,
+          distLowPct: low52 ? ((price - low52) / low52) * 100 : 0,
+          ma20,
+          ma50,
+          ma200,
+          volume,
+          volumeRatio: avgVol20 && volume ? volume / avgVol20 : null,
+          marketTime: meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000).toLocaleString("ko-KR") : "",
+          ok: true,
+        };
+      }
+
+      async function fetchLocalQuotes(tickers) {
+        const results = [];
+        for (const group of chunk(tickers, 12)) {
+          const symbols = group.map(yahooSymbol);
+          const response = await fetchWithTimeout(`/api/quotes?symbols=${encodeURIComponent(symbols.join(","))}`, 30000);
+          if (!response.ok) throw new Error(`Local quote API ${response.status}`);
+          const data = await response.json();
+          group.forEach((ticker, index) => {
+            const quote = data.results && data.results[symbols[index]];
+            if (quote && quote.ok) results.push({ ...quote, ticker });
+          });
+        }
+        return results;
+      }
+
+      function chunk(items, size) {
+        const out = [];
+        for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+        return out;
+      }
+
+      function pct(value, digits = 1) {
+        if (value == null || Number.isNaN(value)) return "-";
+        const sign = value > 0 ? "+" : "";
+        return `${sign}${value.toFixed(digits)}%`;
+      }
+
+      function money(value) {
+        if (value == null || Number.isNaN(value)) return "-";
+        return value < 100 ? `$${value.toFixed(2)}` : `$${value.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 })}`;
+      }
+
+      function scoreItem(item) {
+        const q = state.quotes[item.ticker] || {};
+        const price = q.price;
+        const above20 = price && q.ma20 ? price > q.ma20 : false;
+        const above50 = price && q.ma50 ? price > q.ma50 : false;
+        const nearHigh = q.distHighPct != null ? q.distHighPct >= -7 : false;
+        const notStretched = q.ma20 && price ? ((price - q.ma20) / q.ma20) * 100 < 10 : true;
+        const volumePush = q.volumeRatio != null ? q.volumeRatio >= 1.15 : false;
+        const pullback = q.distHighPct != null && q.distHighPct < -10 && q.distHighPct > -28;
+        const breakdown = price && q.ma50 ? price < q.ma50 : false;
+
+        const hasLive = q && q.ok && q.price;
+        let score = hasLive ? 50 : 45;
+        score += qualityByTicker[item.ticker] || 0;
+        if (above20) score += 12;
+        if (above50) score += 14;
+        if (nearHigh) score += 10;
+        if (volumePush) score += 8;
+        if (notStretched) score += 7;
+        if (pullback) score += 5;
+        if (hasLive && q.changePct > 0) score += 6;
+        if (hasLive && q.changePct > 1.2) score += 7;
+        if (q.changePct > 2) score += 5;
+        if (q.changePct < -1.5) score -= 8;
+        if (q.changePct < -3) score -= 12;
+        if (breakdown) score -= 20;
+        if (q.distHighPct < -35) score -= 12;
+
+        let action = "wait";
+        if (score >= 76 && !breakdown && notStretched && hasLive) action = "buy";
+        if (score < 48 || breakdown || (hasLive && q.changePct < -3.5)) action = "risk";
+
+        const hasTrendData = q.ma20 || q.ma50 || q.high52;
+        const reason = action === "buy"
+          ? hasTrendData ? "추세와 가격 위치가 동시에 좋음" : "핵심도와 당일 강도가 동시에 좋음"
+          : action === "risk"
+            ? "기술적 지지 이탈 또는 약세 우선"
+            : "좋지만 진입 타이밍 확인 필요";
+
+        return { ...item, quote: q, score: Math.max(0, Math.min(100, Math.round(score))), action, reason };
+      }
+
+      function filteredItems() {
+        const query = state.search.trim().toLowerCase();
+        let items = watchlist
+          .filter((item) => state.sector === "all" || item.sector === state.sector || (item.groups || []).includes(state.sector))
+          .filter((item) => !query || item.ticker.toLowerCase().includes(query) || item.name.toLowerCase().includes(query))
+          .map(scoreItem);
+
+        if (state.sort === "momentum") {
+          items.sort((a, b) => (b.quote.changePct || -999) - (a.quote.changePct || -999));
+        } else if (state.sort === "pullback") {
+          items.sort((a, b) => (a.quote.distHighPct || 0) - (b.quote.distHighPct || 0));
+        } else {
+          items.sort((a, b) => b.score - a.score);
+        }
+        return items;
+      }
+
+      function actionLabel(action) {
+        if (action === "buy") return "분할매수 후보";
+        if (action === "risk") return "축소/회피";
+        return "기다림";
+      }
+
+      function tvUrl(ticker) {
+        if (!/^[A-Z0-9.-]+(\.[A-Z]{1,3})?$/.test(ticker)) {
+          return `https://www.tradingview.com/search/?query=${encodeURIComponent(ticker)}`;
+        }
+        if (ticker.endsWith(".KS") || ticker.endsWith(".KQ")) {
+          return `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(`KRX:${ticker.split(".")[0]}`)}`;
+        }
+        return `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(ticker)}`;
+      }
+
+      function yahooUrl(ticker) {
+        if (!/^[A-Z0-9.-]+(\.[A-Z]{1,3})?$/.test(ticker)) {
+          return `https://finance.naver.com/search/searchList.naver?query=${encodeURIComponent(ticker)}`;
+        }
+        return `https://finance.yahoo.com/quote/${encodeURIComponent(ticker)}`;
+      }
+
+      function sectorMeta(id) {
+        return sectors.find((sector) => sector.id === id) || sectors[0];
+      }
+
+      const iconPaths = {
+        all: '<circle cx="12" cy="12" r="8"></circle><path d="M4 12h16"></path><path d="M12 4v16"></path>',
+        globe: '<circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path><path d="M12 3a14 14 0 0 1 0 18"></path><path d="M12 3a14 14 0 0 0 0 18"></path>',
+        korea: '<path d="M4 12a8 8 0 0 1 16 0"></path><path d="M20 12a8 8 0 0 1-16 0"></path><circle cx="12" cy="12" r="3"></circle>',
+        chip: '<rect x="7" y="7" width="10" height="10" rx="2"></rect><path d="M9 1v4"></path><path d="M15 1v4"></path><path d="M9 19v4"></path><path d="M15 19v4"></path><path d="M1 9h4"></path><path d="M1 15h4"></path><path d="M19 9h4"></path><path d="M19 15h4"></path>',
+        zap: '<path d="M13 2L4 14h7l-1 8 10-13h-7l0-7z"></path>',
+        atom: '<circle cx="12" cy="12" r="2"></circle><path d="M20 12c0 2-3.6 4-8 4s-8-2-8-4 3.6-4 8-4 8 2 8 4z"></path><path d="M16 19c-1.7 1-5.1-1-7.3-4.8S6.2 6.3 8 5.3s5.1 1 7.3 4.8 2.5 7.9.7 8.9z"></path><path d="M8 19c1.7 1 5.1-1 7.3-4.8S17.8 6.3 16 5.3s-5.1 1-7.3 4.8S6.2 18 8 19z"></path>',
+        aperture: '<circle cx="12" cy="12" r="9"></circle><path d="M14.3 3.4 12 12"></path><path d="m20.6 9.7-8.6 2.3"></path><path d="m17.2 18.3-5.2-6.3"></path><path d="M9.7 20.6 12 12"></path><path d="m3.4 14.3 8.6-2.3"></path><path d="m6.8 5.7 5.2 6.3"></path>',
+        pickaxe: '<path d="M14 5c3 0 5 1 7 3"></path><path d="M14 5c-3 0-7 2-10 6"></path><path d="m2 22 8-8"></path><path d="m8 14 2 2"></path>',
+        server: '<rect x="4" y="4" width="16" height="6" rx="2"></rect><rect x="4" y="14" width="16" height="6" rx="2"></rect><path d="M8 7h.01"></path><path d="M8 17h.01"></path>',
+        buy: '<path d="M3 17 9 11l4 4 8-8"></path><path d="M14 7h7v7"></path>',
+        wait: '<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path>',
+        risk: '<path d="M12 3 2 21h20L12 3z"></path><path d="M12 9v5"></path><path d="M12 17h.01"></path>',
+        etf: '<path d="M4 19V5"></path><path d="M4 19h16"></path><path d="M8 16v-5"></path><path d="M12 16V8"></path><path d="M16 16v-3"></path>',
+        robot: '<rect x="5" y="8" width="14" height="10" rx="3"></rect><path d="M12 8V4"></path><path d="M8 13h.01"></path><path d="M16 13h.01"></path><path d="M9 18v2"></path><path d="M15 18v2"></path>',
+        rocket: '<path d="M5 15c2-6 7-10 14-10-1 7-4 12-10 14l-4-4z"></path><path d="M9 19c-1 1-3 2-5 1 0-2 1-4 2-5"></path><circle cx="15" cy="9" r="1.5"></circle>',
+        car: '<path d="M5 16h14l-2-5H7l-2 5z"></path><path d="M7 16v3"></path><path d="M17 16v3"></path><circle cx="8" cy="19" r="1"></circle><circle cx="16" cy="19" r="1"></circle>',
+        health: '<path d="M12 21s-7-4.6-9-9.5C1 6.8 6.5 4 12 9c5.5-5 11-2.2 9 2.5C19 16.4 12 21 12 21z"></path><path d="M8 12h8"></path><path d="M12 8v8"></path>',
+        finance: '<path d="M3 21h18"></path><path d="M6 18V8"></path><path d="M12 18V4"></path><path d="M18 18v-7"></path>',
+      };
+
+      const sectorIcons = {
+        all: "all",
+        "requested-us": "globe",
+        "requested-kr": "korea",
+        "ai-infra": "server",
+        power: "zap",
+        nuclear: "atom",
+        "semis-us": "chip",
+        "semis-kr": "chip",
+        photonics: "aperture",
+        materials: "pickaxe",
+      };
+
+      function icon(name, className = "", color = "") {
+        const path = iconPaths[name] || iconPaths.all;
+        const style = color ? ` style="--icon-color:${color};"` : "";
+        return `<span class="icon ${className}"${style} aria-hidden="true"><svg viewBox="0 0 24 24">${path}</svg></span>`;
+      }
+
+      function iconForItem(item) {
+        const ticker = item.ticker;
+        const name = item.name || "";
+        if ((item.groups || []).includes("requested-kr") || item.sector === "requested-kr") {
+          if (/로봇/.test(name)) return "robot";
+          if (/스페이스|에어로|우주|RKLB/.test(name)) return "rocket";
+          if (/현대차/.test(name)) return "car";
+          if (/헬스|HIMS/.test(name)) return "health";
+          return "korea";
+        }
+        if (["SOXL", "TQQQ", "QLD", "JEPQ", "JEPI", "IBIT", "XLU", "URA", "URNM", "PALL", "DRAM"].includes(ticker)) return "etf";
+        if (item.sector === "semis-us" || item.sector === "semis-kr") return "chip";
+        if (item.sector === "power") return "zap";
+        if (item.sector === "nuclear") return "atom";
+        if (item.sector === "photonics") return "aperture";
+        if (item.sector === "materials") return "pickaxe";
+        if (["RKLB"].includes(ticker)) return "rocket";
+        if (["TSLA"].includes(ticker)) return "car";
+        if (["HIMS"].includes(ticker)) return "health";
+        if (["HOOD", "CRCL"].includes(ticker)) return "finance";
+        return "server";
+      }
+
+      function itemColor(item) {
+        return sectorMeta(item.sector).color;
+      }
+
+      function shortSectorLabel(item) {
+        return sectorMeta(item.sector).label;
+      }
+
+      function renderNav() {
+        els.nav.innerHTML = sectors.map((sector) => {
+          const count = sector.id === "all" ? watchlist.length : watchlist.filter((item) => item.sector === sector.id || (item.groups || []).includes(sector.id)).length;
+          return `
+            <button class="${state.sector === sector.id ? "is-active" : ""}" data-sector="${sector.id}">
+              ${icon(sectorIcons[sector.id], "small", sector.color)}
+              ${sector.label}
+              <span class="nav-count">${count}</span>
+            </button>
+          `;
+        }).join("");
+      }
+
+      function renderScoreboard(items) {
+        const buys = items.filter((item) => item.action === "buy").length;
+        const waits = items.filter((item) => item.action === "wait").length;
+        const risks = items.filter((item) => item.action === "risk").length;
+        const leaders = items.filter((item) => item.quote && item.quote.changePct > 0).length;
+        const leaderRate = items.length ? Math.round((leaders / items.length) * 100) : 0;
+        const top = items[0];
+        els.scoreboard.innerHTML = [
+          ["오늘 바로 볼 후보", buys, "초록색 후보만 신규 매수 검토"],
+          ["기다릴 후보", waits, "가격은 좋지만 타이밍 확인"],
+          ["줄일/피할 후보", risks, "지지 이탈 또는 약세"],
+          ["상승 종목 비율", `${leaderRate}%`, top ? `현재 1순위 ${top.ticker}` : "데이터 없음"],
+        ].map(([label, value, note]) => `
+          <div class="metric">
+            <div class="eyebrow">${label}</div>
+            <div class="metric-value">${value}</div>
+            <div class="metric-note">${note}</div>
+          </div>
+        `).join("");
+      }
+
+      function renderActionGrid(items) {
+        const groups = [
+          { key: "buy", title: "지금 볼 것", color: "buy", iconName: "buy", items: items.filter((item) => item.action === "buy") },
+          { key: "wait", title: "기다릴 것", color: "wait", iconName: "wait", items: items.filter((item) => item.action === "wait") },
+          { key: "risk", title: "줄일 것", color: "risk", iconName: "risk", items: items.filter((item) => item.action === "risk") },
+        ];
+
+        els.actionGrid.innerHTML = groups.map((group) => `
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <div class="ticker-line">
+                  ${icon(group.iconName, "small", `var(--${group.color})`)}
+                  <div class="eyebrow">${group.title}</div>
+                </div>
+                <div class="panel-title">${group.items.length}개</div>
+              </div>
+              <span class="badge ${group.color}">${icon(group.iconName, "small", `var(--${group.color})`)} ${group.key === "buy" ? "Action" : group.key === "wait" ? "Timing" : "Risk"}</span>
+            </div>
+            <div class="action-list">
+              ${group.items.length ? group.items.map((item) => `
+                <div class="action-row">
+                  <div>
+                    <div class="ticker-line">${icon(iconForItem(item), "small", itemColor(item))}<div class="ticker">${item.ticker}</div></div>
+                    <div class="name">${item.name}</div>
+                  </div>
+                  <div>
+                    <div class="row-reason">${item.reason}</div>
+                    <div class="row-thesis">${item.action === "buy" ? item.buyRule : item.action === "risk" ? item.riskRule : item.waitRule}</div>
+                  </div>
+                  <span class="badge ${group.color}">${icon(group.iconName, "small", `var(--${group.color})`)} ${item.score}</span>
+                </div>
+              `).join("") : `<div class="empty">해당 후보가 없습니다.</div>`}
+            </div>
+          </div>
+        `).join("");
+      }
+
+      function renderCards(items) {
+        els.cards.innerHTML = items.map((item) => {
+          const q = item.quote || {};
+          const changeClass = q.changePct > 0 ? "var(--buy)" : q.changePct < 0 ? "var(--risk)" : "var(--muted)";
+          const actionClass = item.action === "buy" ? "buy" : item.action === "risk" ? "risk" : "wait";
+          const actionIcon = item.action === "buy" ? "buy" : item.action === "risk" ? "risk" : "wait";
+          const maState = q.price && q.ma50 ? (q.price > q.ma50 ? "50일선 위" : "50일선 아래") : "계산 대기";
+          const highState = q.distHighPct != null ? `52W 고점 ${pct(q.distHighPct)}` : "52W 계산 대기";
+          const volState = q.volumeRatio != null ? `${q.volumeRatio.toFixed(1)}x` : "대기";
+          return `
+            <article class="card">
+              <div class="card-head">
+                <div>
+                  <div class="ticker-line">${icon(iconForItem(item), "big", itemColor(item))}<div><div class="ticker">${item.ticker}</div><div class="sector-chip">${icon(sectorIcons[item.sector] || iconForItem(item), "small", itemColor(item))}${shortSectorLabel(item)}</div></div></div>
+                  <div class="name">${item.name}</div>
+                </div>
+                <div>
+                  <div class="price">${money(q.price)}</div>
+                  <div class="change" style="color:${changeClass};">${pct(q.changePct)}</div>
+                </div>
+              </div>
+              <div class="thesis">${item.thesis}</div>
+              <div class="signal-grid">
+                <div class="signal">
+                  <div class="signal-label">Action</div>
+                  <div class="signal-value">${item.score}</div>
+                </div>
+                <div class="signal">
+                  <div class="signal-label">Trend</div>
+                  <div class="signal-value">${maState}</div>
+                </div>
+                <div class="signal">
+                  <div class="signal-label">Volume</div>
+                  <div class="signal-value">${volState}</div>
+                </div>
+              </div>
+              <span class="badge ${actionClass}">${icon(actionIcon, "small", `var(--${actionClass})`)} ${actionLabel(item.action)}</span>
+              <div class="heat"><div class="heat-fill" style="width:${item.score}%;"></div></div>
+              <div class="rules">
+                <div class="rule"><b>매수:</b> ${item.buyRule}</div>
+                <div class="rule"><b>대기:</b> ${item.waitRule}</div>
+                <div class="rule"><b>리스크:</b> ${item.riskRule}</div>
+                <div class="rule"><b>현재 위치:</b> ${highState}, YTD ${pct(q.ytdPct)}, ${q.marketTime || "시간 대기"}</div>
+              </div>
+              <div class="card-actions">
+                <a class="link-button" href="${tvUrl(item.ticker)}" target="_blank" rel="noreferrer">TradingView</a>
+                <a class="link-button" href="${yahooUrl(item.ticker)}" target="_blank" rel="noreferrer">Yahoo</a>
+              </div>
+            </article>
+          `;
+        }).join("");
+      }
+
+      function render() {
+        const meta = sectorMeta(state.sector);
+        const items = filteredItems();
+        els.title.textContent = state.sector === "all" ? "오늘 액션부터 본다" : `${meta.label}: 지금 할 일`;
+        els.subtitle.textContent = state.sector === "all"
+          ? "전체 종목을 매수 후보, 대기 후보, 리스크 후보로 나눕니다. 초록색만 오늘 액션 후보입니다."
+          : `${meta.label} 안에서 바로 볼 종목과 기다릴 종목을 분리합니다. 점수보다 실행 조건을 먼저 보세요.`;
+        renderNav();
+        renderScoreboard(items);
+        renderActionGrid(items);
+        renderCards(items);
+        updateStatus();
+      }
+
+      function updateStatus(message) {
+        if (message) {
+          els.status.textContent = message;
+          return;
+        }
+        const loaded = Object.keys(state.quotes).length;
+        const quoteableCount = watchlist.filter(isQuoteable).length;
+        const when = state.lastUpdated ? ` · ${state.lastUpdated}` : "";
+        if (state.dataError && !state.loading) {
+          els.status.textContent = `${loaded}/${quoteableCount}개 시세 반영 · 전체 ${watchlist.length}개 · ${state.dataError}`;
+          return;
+        }
+        els.status.textContent = state.loading
+          ? "현재 기준 데이터를 불러오는 중입니다..."
+          : `${loaded}/${quoteableCount}개 시세 반영 · 전체 ${watchlist.length}개${when}`;
+      }
+
+      async function refresh() {
+        if (state.loading) return;
+        state.loading = true;
+        state.dataError = "";
+        updateStatus();
+        render();
+        const quoteItems = watchlist.filter(isQuoteable);
+        const tickers = quoteItems.map((item) => item.ticker);
+        try {
+          const localQuotes = await fetchLocalQuotes(tickers);
+          localQuotes.forEach((quote) => {
+            state.quotes[quote.ticker] = quote;
+          });
+        } catch (error) {
+          // Static-file fallback: use browser-side Yahoo chart calls when the local quote server is absent.
+        }
+        const missing = tickers.filter((ticker) => !state.quotes[ticker]);
+        if (missing.length) {
+          for (const group of chunk(missing, 8)) {
+            const results = await Promise.allSettled(group.map(fetchQuote));
+            results.forEach((result, index) => {
+              if (result.status === "fulfilled") {
+                state.quotes[group[index]] = result.value;
+              }
+            });
+            render();
+            updateStatus();
+          }
+        }
+        const loaded = Object.keys(state.quotes).length;
+        if (!loaded) {
+          state.dataError = "실시간 호출 실패, 기본 액션 룰로 표시";
+        } else if (loaded < tickers.length) {
+          state.dataError = "일부 시세만 반영";
+        }
+        state.lastUpdated = new Date().toLocaleString("ko-KR");
+        state.loading = false;
+        render();
+      }
+
+      els.nav.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-sector]");
+        if (!button) return;
+        state.sector = button.dataset.sector;
+        render();
+      });
+
+      els.search.addEventListener("input", (event) => {
+        state.search = event.target.value;
+        render();
+      });
+
+      document.querySelectorAll("[data-sort]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.sort = button.dataset.sort;
+          render();
+        });
+      });
+
+      els.refresh.addEventListener("click", refresh);
+      els.reset.addEventListener("click", () => {
+        state.sector = "all";
+        state.sort = "score";
+        state.search = "";
+        els.search.value = "";
+        render();
+      });
+
       render();
+      refresh();
     </script>
   </body>
 </html>
